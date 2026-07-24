@@ -1,0 +1,302 @@
+[
+  {
+    "account_id": "twuser_bot_01",
+    "bot_likelihood": 0.949,
+    "signals": {
+      "account_age": 0.93,
+      "follower_ratio": 1.0,
+      "posting_frequency": 1.0,
+      "engagement_anomaly": 0.85
+    }
+  },
+  {
+    "account_id": "twuser_bot_02",
+    "bot_likelihood": 0.9484,
+    "signals": {
+      "account_age": 0.928,
+      "follower_ratio": 1.0,
+      "posting_frequency": 1.0,
+      "engagement_anomaly": 0.85
+    }
+  },
+  {
+    "account_id": "twuser_bot_03",
+    "bot_likelihood": 0.9478,
+    "signals": {
+      "account_age": 0.926,
+      "follower_ratio": 1.0,
+      "posting_frequency": 1.0,
+      "engagement_anomaly": 0.85
+    }
+  },
+  {
+    "account_id": "twuser_1012",
+    "bot_likelihood": 0.799,
+    "signals": {
+      "account_age": 0.93,
+      "follower_ratio": 1.0,
+      "posting_frequency": 0.9999,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1010",
+    "bot_likelihood": 0.7984,
+    "signals": {
+      "account_age": 0.928,
+      "follower_ratio": 1.0,
+      "posting_frequency": 1.0,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1009",
+    "bot_likelihood": 0.7965,
+    "signals": {
+      "account_age": 0.9218,
+      "follower_ratio": 1.0,
+      "posting_frequency": 1.0,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1008",
+    "bot_likelihood": 0.7931,
+    "signals": {
+      "account_age": 0.9103,
+      "follower_ratio": 1.0,
+      "posting_frequency": 1.0,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1014",
+    "bot_likelihood": 0.7857,
+    "signals": {
+      "account_age": 0.915,
+      "follower_ratio": 1.0,
+      "posting_frequency": 0.9648,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "fbuser_3002",
+    "bot_likelihood": 0.7166,
+    "signals": {
+      "account_age": 0.8661,
+      "follower_ratio": 1.0,
+      "posting_frequency": 0.747,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "iguser_2001",
+    "bot_likelihood": 0.6683,
+    "signals": {
+      "account_age": 0.8856,
+      "follower_ratio": 1.0,
+      "posting_frequency": 0.5307,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "iguser_2003",
+    "bot_likelihood": 0.0693,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.1022,
+      "posting_frequency": 0.0949,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1006",
+    "bot_likelihood": 0.068,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.103,
+      "posting_frequency": 0.0889,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1004",
+    "bot_likelihood": 0.0621,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0841,
+      "posting_frequency": 0.0844,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1007",
+    "bot_likelihood": 0.0616,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0833,
+      "posting_frequency": 0.0832,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1011",
+    "bot_likelihood": 0.0613,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0834,
+      "posting_frequency": 0.0817,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "fbuser_3004",
+    "bot_likelihood": 0.0602,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0918,
+      "posting_frequency": 0.0691,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1005",
+    "bot_likelihood": 0.0599,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0972,
+      "posting_frequency": 0.0623,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1003",
+    "bot_likelihood": 0.0594,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0863,
+      "posting_frequency": 0.0712,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1001",
+    "bot_likelihood": 0.0582,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0876,
+      "posting_frequency": 0.0652,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "fbuser_3003",
+    "bot_likelihood": 0.0577,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0916,
+      "posting_frequency": 0.0592,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "fbuser_3001",
+    "bot_likelihood": 0.0576,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.084,
+      "posting_frequency": 0.0662,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1002",
+    "bot_likelihood": 0.0572,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.093,
+      "posting_frequency": 0.0557,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "twuser_1013",
+    "bot_likelihood": 0.0571,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0835,
+      "posting_frequency": 0.0651,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "iguser_2002",
+    "bot_likelihood": 0.0549,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0842,
+      "posting_frequency": 0.0556,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "ytuser_4003",
+    "bot_likelihood": 0.0545,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0832,
+      "posting_frequency": 0.0546,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "iguser_2004",
+    "bot_likelihood": 0.0544,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0856,
+      "posting_frequency": 0.0522,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "fbuser_3005",
+    "bot_likelihood": 0.0543,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0853,
+      "posting_frequency": 0.0518,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "iguser_2005",
+    "bot_likelihood": 0.0538,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0844,
+      "posting_frequency": 0.0509,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "ytuser_4001",
+    "bot_likelihood": 0.0532,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0833,
+      "posting_frequency": 0.0494,
+      "engagement_anomaly": 0.1
+    }
+  },
+  {
+    "account_id": "ytuser_4002",
+    "bot_likelihood": 0.053,
+    "signals": {
+      "account_age": 0.0,
+      "follower_ratio": 0.0834,
+      "posting_frequency": 0.0488,
+      "engagement_anomaly": 0.1
+    }
+  }
+]

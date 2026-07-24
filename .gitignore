@@ -1,0 +1,67 @@
+# Model weights & checkpoints
+checkpoints/
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+*.h5
+*.pkl
+
+# fastText models
+*.ftz
+lid.176.ftz
+lid.176.bin
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Neo4j data
+neo4j_data/
+data/databases/
+data/transactions/
+
+# Logs
+logs/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dataset downloads (large files — track via DVC or download script)
+raw_datasets/
+*.csv.gz
+*.tsv.gz
+
+# Doccano exports
+doccano_exports/
+
+# Temporary
+tmp/
+temp/

@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "post_schema.json",
+  "title": "Social Media Post",
+  "description": "Schema for raw social-media posts produced by the Ingestion layer and consumed by the NLP Engine. Topic: raw-posts.",
+  "type": "object",
+  "required": [
+    "post_id",
+    "platform",
+    "author_id",
+    "author_handle",
+    "text",
+    "created_at",
+    "hashtags",
+    "mentions",
+    "media_urls",
+    "engagement_counts",
+    "raw_payload"
+  ],
+  "properties": {
+    "post_id": {
+      "type": "string",
+      "description": "Globally unique identifier for the post."
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["twitter", "instagram", "facebook", "youtube"],
+      "description": "Source platform."
+    },
+    "author_id": {
+      "type": "string",
+      "description": "Platform-specific author identifier."
+    },
+    "author_handle": {
+      "type": "string",
+      "description": "Public handle / username of the author."
+    },
+    "text": {
+      "type": "string",
+      "description": "Raw post text content."
+    },
+    "language_hint": {
+      "type": ["string", "null"],
+      "description": "Optional language hint from the platform, e.g. 'gu', 'hi', 'en', 'mixed'."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of post creation."
+    },
+    "geo_location": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["lat", "lng", "place_name"],
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "place_name": { "type": "string" }
+          }
+        },
+        { "type": "null" }
+      ],
+      "description": "Geo-location data, or null if unavailable."
+    },
+    "hashtags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Hashtags extracted from the post."
+    },
+    "mentions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Handles mentioned in the post."
+    },
+    "media_urls": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" },
+      "description": "URLs to attached images or videos."
+    },
+    "engagement_counts": {
+      "type": "object",
+      "required": ["likes", "shares", "comments"],
+      "properties": {
+        "likes": { "type": "integer", "minimum": 0 },
+        "shares": { "type": "integer", "minimum": 0 },
+        "comments": { "type": "integer", "minimum": 0 }
+      },
+      "description": "Engagement metrics at time of ingestion."
+    },
+    "raw_payload": {
+      "type": "object",
+      "description": "Original API response. MUST include account_created_at, follower_count, following_count, post_count for bot-scoring.",
+      "required": [
+        "account_created_at",
+        "follower_count",
+        "following_count",
+        "post_count"
+      ],
+      "properties": {
+        "account_created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of when the author's account was created."
+        },
+        "follower_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "following_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "post_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,25 @@
+# ============================================================
+# NETRA — Optional Dependencies
+# ============================================================
+# These have complex build requirements or system dependencies.
+# Install separately: pip install -r requirements-optional.txt
+# ============================================================
+
+# --- Transliteration (requires fairseq, needs Python <=3.11) ---
+# ai4bharat-transliteration
+# NOTE: ai4bharat-transliteration depends on fairseq which has build issues
+# on Python 3.12+. If on Python 3.13, the transliteration module gracefully
+# falls back to pass-through mode. Install on Python 3.11 or conda env.
+
+# --- Language ID (needs pre-built wheel) ---
+# fasttext-wheel
+# NOTE: Alternative to fasttext, pre-built wheels. If unavailable,
+# language_id.py falls back to script-based heuristic detection.
+
+# --- Multimodal Meme Bonus ---
+pytesseract
+Pillow
+opencv-python-headless
+# open-clip-torch
+# NOTE: CLIP is large (~2GB). Only install if using meme analysis.
+# The image_text_consistency module checks for availability at runtime.

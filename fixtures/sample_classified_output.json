@@ -1,0 +1,302 @@
+[
+  {
+    "post_id": "tw-20260720-001",
+    "threat_category": "Inflammatory",
+    "threat_confidence": 0.7,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9392,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-002",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.9592,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "ig-20260720-003",
+    "threat_category": "FakeNews",
+    "threat_confidence": 0.75,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9556,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-004",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.8474,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "fb-20260720-005",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.8157,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-006",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "neutral",
+    "sentiment_intensity": 0.6111,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "yt-20260720-007",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.8778,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-008",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.5869,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "fb-20260720-009",
+    "threat_category": "FakeNews",
+    "threat_confidence": 0.75,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9062,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "ig-20260720-010",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.9531,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-011",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9631,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-012",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.978,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "fb-20260720-013",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9801,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "yt-20260720-014",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.9313,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-015",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "neutral",
+    "sentiment_intensity": 0.9688,
+    "detected_language": "hi",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "ig-20260720-016",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9189,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-017",
+    "threat_category": "FakeNews",
+    "threat_confidence": 0.75,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.922,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "fb-20260720-018",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.831,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-019",
+    "threat_category": "IncitementToViolence",
+    "threat_confidence": 0.85,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.4068,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "ig-20260720-020",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.8088,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-021",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.5495,
+    "detected_language": "en",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "fb-20260720-022",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.9833,
+    "detected_language": "en",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-023",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9744,
+    "detected_language": "en",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "yt-20260720-024",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.9207,
+    "detected_language": "en",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-025",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "neutral",
+    "sentiment_intensity": 0.736,
+    "detected_language": "en",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-026",
+    "threat_category": "FakeNews",
+    "threat_confidence": 0.75,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.8659,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-027",
+    "threat_category": "FakeNews",
+    "threat_confidence": 0.75,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.8007,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-028",
+    "threat_category": "FakeNews",
+    "threat_confidence": 0.75,
+    "sentiment": "negative",
+    "sentiment_intensity": 0.9142,
+    "detected_language": "mixed",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "ig-20260720-029",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "positive",
+    "sentiment_intensity": 0.858,
+    "detected_language": "en",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "post_id": "tw-20260720-030",
+    "threat_category": "Neutral",
+    "threat_confidence": 0.65,
+    "sentiment": "neutral",
+    "sentiment_intensity": 0.9532,
+    "detected_language": "gu",
+    "model_version": "mock-heuristic-v0.1.0",
+    "classified_at": "2026-07-22T18:37:03.223614+00:00"
+  }
+]

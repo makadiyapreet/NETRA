@@ -1,0 +1,41 @@
+# ============================================================
+# NETRA — Requirements
+# ============================================================
+# Install core:    pip install -r requirements.txt
+# Install all:     pip install -r requirements.txt -r requirements-optional.txt
+# ============================================================
+
+# --- NLP Core ---
+torch>=2.0
+transformers>=4.35
+tokenizers
+datasets
+accelerate
+peft
+scikit-learn
+sentencepiece
+spacy>=3.6
+spacy-transformers
+
+# --- Inference ---
+fastapi>=0.104
+uvicorn[standard]
+pydantic>=2.0
+confluent-kafka
+
+# --- Bot & Network ---
+datasketch
+neo4j
+graphdatascience
+pandas
+numpy
+
+# --- Testing & Dev ---
+pytest
+pytest-asyncio
+httpx
+jsonschema
+ruff
+
+# --- Optional Production ---
+# onnxruntime

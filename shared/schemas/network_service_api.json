@@ -1,0 +1,107 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Network Analysis Service API",
+    "description": "REST API exposed by the Network Analysis layer for the Dashboard team. Called directly, NOT via Kafka.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/bot-score/{account_id}": {
+      "get": {
+        "summary": "Get bot-likelihood score for an account",
+        "operationId": "getBotScore",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bot score result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["account_id", "bot_likelihood", "signals"],
+                  "properties": {
+                    "account_id": { "type": "string" },
+                    "bot_likelihood": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "signals": {
+                      "type": "object",
+                      "description": "Individual signal scores contributing to bot_likelihood.",
+                      "additionalProperties": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found"
+          }
+        }
+      }
+    },
+    "/cluster/{cluster_id}": {
+      "get": {
+        "summary": "Get coordination cluster details",
+        "operationId": "getCluster",
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cluster details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["cluster_id", "accounts", "coordination_score", "graph_edges"],
+                  "properties": {
+                    "cluster_id": { "type": "string" },
+                    "accounts": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "coordination_score": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "graph_edges": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["from", "to", "relation"],
+                        "properties": {
+                          "from": { "type": "string" },
+                          "to": { "type": "string" },
+                          "relation": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cluster not found"
+          }
+        }
+      }
+    }
+  }
+}

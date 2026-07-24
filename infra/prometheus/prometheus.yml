@@ -1,0 +1,38 @@
+# ============================================================
+# Prometheus configuration for NETRA (ps05-threat-analyzer)
+# Scrapes all application services for monitoring.
+# ============================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ── Ingestion Layer ─────────────────────────────────────
+  - job_name: "ingestion-service"
+    static_configs:
+      - targets: ["host.docker.internal:8002"]
+        labels:
+          service: "ingestion"
+    metrics_path: "/metrics"
+
+  # ── NLP Engine ──────────────────────────────────────────
+  - job_name: "nlp-engine"
+    static_configs:
+      - targets: ["nlp-engine:8000"]
+        labels:
+          service: "nlp-engine"
+    metrics_path: "/metrics"
+
+  # ── Network Analysis Service ────────────────────────────
+  - job_name: "network-service"
+    static_configs:
+      - targets: ["network-service:8001"]
+        labels:
+          service: "network-analysis"
+    metrics_path: "/metrics"
+
+  # ── Prometheus Self-Monitoring ──────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

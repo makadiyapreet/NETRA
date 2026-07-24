@@ -1,0 +1,222 @@
+version: "3.8"
+
+# ============================================================
+# NETRA — Full Stack Docker Compose
+# Single `docker-compose up` brings up the complete system:
+#   - Infrastructure: Kafka, Redis, PostgreSQL, Neo4j, Elasticsearch
+#   - Application: NLP Engine, Network Service, API Gateway
+#   - Monitoring: Prometheus, Grafana
+# ============================================================
+
+services:
+  # ── Kafka Infrastructure ──────────────────────────────────
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: netra-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: netra-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: netra-kafka-init
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      cub kafka-ready -b kafka:29092 1 60
+
+      echo 'Creating topics...'
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --topic raw-posts
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --topic trend-spikes
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --topic classified-posts
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --topic alerts
+
+      echo 'Topics created:'
+      kafka-topics --list --bootstrap-server kafka:29092
+      "
+
+  # ── Redis ─────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    container_name: netra-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # ── PostgreSQL ────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: netra-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ps05_threat
+      POSTGRES_USER: ps05
+      POSTGRES_PASSWORD: ps05secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./ingestion/watchlist/watchlist_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    restart: unless-stopped
+
+  # ── Neo4j ─────────────────────────────────────────────────
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: netra-neo4j
+    ports:
+      - "7474:7474"   # HTTP (browser)
+      - "7687:7687"   # Bolt (driver)
+    environment:
+      NEO4J_AUTH: neo4j/netra
+      NEO4J_PLUGINS: '["graph-data-science", "apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*,apoc.*"
+      NEO4J_dbms_security_procedures_allowlist: "gds.*,apoc.*"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    restart: unless-stopped
+
+  # ── Elasticsearch ─────────────────────────────────────────
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: netra-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.ml.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\\|yellow\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ── NLP Engine ────────────────────────────────────────────
+
+  nlp-engine:
+    build:
+      context: .
+      dockerfile: infra/nlp_engine.Dockerfile
+    container_name: netra-nlp-engine
+    depends_on:
+      - kafka
+      - kafka-init
+    ports:
+      - "8000:8000"
+    environment:
+      MODE: ${MODE:-fixture}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      NLP_SERVICE_HOST: "0.0.0.0"
+      NLP_SERVICE_PORT: "8000"
+      ACTIVE_MODEL: ${ACTIVE_MODEL:-indicbert}
+      MODEL_VERSION: ${MODEL_VERSION:-indicbert-v0.1.0-dev}
+    volumes:
+      - ./checkpoints:/app/checkpoints
+      - ./fixtures:/app/fixtures
+    restart: unless-stopped
+
+  # ── Network Analysis Service ──────────────────────────────
+
+  network-service:
+    build:
+      context: .
+      dockerfile: infra/network_analysis.Dockerfile
+    container_name: netra-network-service
+    depends_on:
+      - neo4j
+    ports:
+      - "8001:8001"
+    environment:
+      MODE: ${MODE:-fixture}
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: netra
+      NETWORK_SERVICE_HOST: "0.0.0.0"
+      NETWORK_SERVICE_PORT: "8001"
+    volumes:
+      - ./fixtures:/app/fixtures
+    restart: unless-stopped
+
+  # ── Monitoring: Prometheus ────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.49.0
+    container_name: netra-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+    restart: unless-stopped
+
+  # ── Monitoring: Grafana ───────────────────────────────────
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: netra-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: netra
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  zookeeper_data:
+  kafka_data:
+  redis_data:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  elasticsearch_data:
+  prometheus_data:
+  grafana_data:

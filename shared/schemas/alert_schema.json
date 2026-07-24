@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "alert_schema.json",
+  "title": "Threat Alert",
+  "description": "Schema for alerts produced by the NLP/Network layer and consumed by the Dashboard. Topic: alerts.",
+  "type": "object",
+  "required": [
+    "alert_id",
+    "post_id",
+    "threat_category",
+    "severity",
+    "triggering_reason",
+    "created_at"
+  ],
+  "properties": {
+    "alert_id": {
+      "type": "string",
+      "description": "Globally unique alert identifier."
+    },
+    "post_id": {
+      "type": "string",
+      "description": "Matches post_schema.json post_id."
+    },
+    "threat_category": {
+      "type": "string",
+      "enum": ["Inflammatory", "IncitementToViolence", "FakeNews", "Neutral"],
+      "description": "Threat category that triggered the alert."
+    },
+    "severity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Severity level from 1 (low) to 5 (critical)."
+    },
+    "triggering_reason": {
+      "type": "string",
+      "description": "Human-readable explanation of why this alert was generated."
+    },
+    "bot_cluster_id": {
+      "type": ["string", "null"],
+      "description": "Links to a coordination cluster if relevant, null otherwise."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of alert creation."
+    }
+  },
+  "additionalProperties": false
+}

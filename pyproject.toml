@@ -1,0 +1,70 @@
+[project]
+name = "netra"
+version = "0.1.0"
+description = "Layer 2 (NLP Engine) + Layer 3 (Bot & Network Analysis) for NETRA Cyber Threat Intelligence / OSINT"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "NETRA Team" }
+]
+
+[project.optional-dependencies]
+nlp = [
+    "torch>=2.0",
+    "transformers>=4.35",
+    "tokenizers",
+    "datasets",
+    "accelerate",
+    "peft",
+    "scikit-learn",
+    "ai4bharat-transliteration",
+    "fasttext-wheel",
+    "sentencepiece",
+    "spacy>=3.6",
+    "spacy-transformers",
+]
+inference = [
+    "fastapi>=0.104",
+    "uvicorn[standard]",
+    "pydantic>=2.0",
+    "confluent-kafka",
+]
+network = [
+    "datasketch",
+    "neo4j",
+    "graphdatascience",
+    "pandas",
+    "numpy",
+]
+multimodal = [
+    "pytesseract",
+    "Pillow",
+    "opencv-python-headless",
+    "open-clip-torch",
+]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+    "jsonschema",
+    "ruff",
+]
+all = [
+    "netra[nlp,inference,network,multimodal,dev]",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[tool.setuptools.packages.find]
+include = ["nlp_engine*", "network_analysis*", "bonus_multimodal*", "shared*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

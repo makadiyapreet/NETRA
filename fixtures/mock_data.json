@@ -1,0 +1,647 @@
+{
+  "posts": [
+    {
+      "post_id": "POST-001",
+      "platform": "Twitter",
+      "author_handle": "@rage_poster_21",
+      "text": "These people are destroying our culture! They should be taught a lesson they'll never forget! #SaveOurLand",
+      "timestamp": "2026-07-22T10:15:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Ahmedabad", "lat": 23.0225, "lng": 72.5714 },
+      "engagement_counts": { "likes": 1245, "shares": 532, "comments": 318 },
+      "classification": {
+        "threat_category": "IncitementToViolence",
+        "sentiment": "negative",
+        "confidence": 0.92,
+        "keywords": ["destroying", "taught a lesson", "SaveOurLand"]
+      }
+    },
+    {
+      "post_id": "POST-002",
+      "platform": "Facebook",
+      "author_handle": "TruthRevealer_GJ",
+      "text": "BREAKING: Government secretly building military base in residential area. 100 families displaced. Media silent! Share before they delete this!",
+      "timestamp": "2026-07-22T11:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Surat", "lat": 21.1702, "lng": 72.8311 },
+      "engagement_counts": { "likes": 3420, "shares": 2100, "comments": 876 },
+      "classification": {
+        "threat_category": "FakeNews",
+        "sentiment": "negative",
+        "confidence": 0.88,
+        "keywords": ["BREAKING", "secretly", "media silent", "share before delete"]
+      }
+    },
+    {
+      "post_id": "POST-003",
+      "platform": "Telegram",
+      "author_handle": "underground_news_hi",
+      "text": "सरकार ने लोगों को धोखा दिया है। अब सड़कों पर उतरने का समय आ गया है। हर कोई कल शाम को इकट्ठा हो!",
+      "timestamp": "2026-07-22T12:00:00Z",
+      "detected_language": "hi",
+      "geo_location": { "city": "Delhi", "lat": 28.6139, "lng": 77.209 },
+      "engagement_counts": { "likes": 890, "shares": 445, "comments": 212 },
+      "classification": {
+        "threat_category": "IncitementToViolence",
+        "sentiment": "negative",
+        "confidence": 0.95,
+        "keywords": ["धोखा", "सड़कों पर उतरने", "इकट्ठा"]
+      }
+    },
+    {
+      "post_id": "POST-004",
+      "platform": "Twitter",
+      "author_handle": "@peaceful_debate",
+      "text": "Had a wonderful interfaith dialogue today at the community center. We need more of these conversations. #Unity #Peace",
+      "timestamp": "2026-07-22T13:15:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Mumbai", "lat": 19.076, "lng": 72.8777 },
+      "engagement_counts": { "likes": 567, "shares": 89, "comments": 45 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.97,
+        "keywords": ["interfaith", "dialogue", "Unity", "Peace"]
+      }
+    },
+    {
+      "post_id": "POST-005",
+      "platform": "Facebook",
+      "author_handle": "ViralGujarat",
+      "text": "આ લોકો આપણા ગામમાં ઘૂસી આવ્યા છે. તેમને બહાર કાઢો નહીં તો ગામ બરબાદ થઈ જશે! આજે જ એક્શન લો!",
+      "timestamp": "2026-07-22T14:00:00Z",
+      "detected_language": "gu",
+      "geo_location": { "city": "Rajkot", "lat": 22.3039, "lng": 70.8022 },
+      "engagement_counts": { "likes": 2100, "shares": 1350, "comments": 567 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.91,
+        "keywords": ["ઘૂસી", "બહાર કાઢો", "બરબાદ", "એક્શન"]
+      }
+    },
+    {
+      "post_id": "POST-006",
+      "platform": "Twitter",
+      "author_handle": "@news_manipulator",
+      "text": "EXPOSED: Vaccine contains microchips designed to track citizens. My source in the health ministry confirmed. RT to save lives!",
+      "timestamp": "2026-07-22T08:45:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Bengaluru", "lat": 12.9716, "lng": 77.5946 },
+      "engagement_counts": { "likes": 5600, "shares": 4200, "comments": 1890 },
+      "classification": {
+        "threat_category": "FakeNews",
+        "sentiment": "negative",
+        "confidence": 0.96,
+        "keywords": ["EXPOSED", "microchips", "track citizens", "RT to save"]
+      }
+    },
+    {
+      "post_id": "POST-007",
+      "platform": "Telegram",
+      "author_handle": "anon_network_42",
+      "text": "Time to take matters into our own hands. Meet at the coordinates shared in the group. Bring what you need. No phones.",
+      "timestamp": "2026-07-22T16:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Pune", "lat": 18.5204, "lng": 73.8567 },
+      "engagement_counts": { "likes": 156, "shares": 67, "comments": 23 },
+      "classification": {
+        "threat_category": "IncitementToViolence",
+        "sentiment": "negative",
+        "confidence": 0.89,
+        "keywords": ["take matters", "coordinates", "bring what you need", "no phones"]
+      }
+    },
+    {
+      "post_id": "POST-008",
+      "platform": "Facebook",
+      "author_handle": "HindiJagran",
+      "text": "ये तथाकथित बुद्धिजीवी देश को बर्बाद कर रहे हैं। इनकी असली चेहरा सबके सामने आना चाहिए। शेयर करो!",
+      "timestamp": "2026-07-22T09:20:00Z",
+      "detected_language": "hi",
+      "geo_location": { "city": "Lucknow", "lat": 26.8467, "lng": 80.9462 },
+      "engagement_counts": { "likes": 1890, "shares": 945, "comments": 423 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.84,
+        "keywords": ["बर्बाद", "असली चेहरा", "शेयर करो"]
+      }
+    },
+    {
+      "post_id": "POST-009",
+      "platform": "Twitter",
+      "author_handle": "@civic_updates",
+      "text": "New metro line inauguration in Ahmedabad today! Great progress for the city's infrastructure. #AhmedabadMetro",
+      "timestamp": "2026-07-22T07:00:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Ahmedabad", "lat": 23.0225, "lng": 72.5714 },
+      "engagement_counts": { "likes": 2340, "shares": 456, "comments": 178 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.99,
+        "keywords": ["metro", "inauguration", "infrastructure", "progress"]
+      }
+    },
+    {
+      "post_id": "POST-010",
+      "platform": "Telegram",
+      "author_handle": "factcheck_india",
+      "text": "Viral photo claiming flood in Chennai is actually from Bangladesh in 2019. Please verify before sharing. #FactCheck",
+      "timestamp": "2026-07-22T15:45:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Chennai", "lat": 13.0827, "lng": 80.2707 },
+      "engagement_counts": { "likes": 890, "shares": 1200, "comments": 234 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "neutral",
+        "confidence": 0.93,
+        "keywords": ["viral photo", "verify", "FactCheck"]
+      }
+    },
+    {
+      "post_id": "POST-011",
+      "platform": "Facebook",
+      "author_handle": "RajkotBuzz",
+      "text": "આ community ના લોકો ખૂબ dangerous છે. રાત્રે બહાર ન નીકળો. Police કંઈ નથી કરતી. We need to protect ourselves!",
+      "timestamp": "2026-07-22T18:00:00Z",
+      "detected_language": "mixed",
+      "geo_location": { "city": "Rajkot", "lat": 22.3039, "lng": 70.8022 },
+      "engagement_counts": { "likes": 1567, "shares": 890, "comments": 345 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.86,
+        "keywords": ["dangerous", "protect ourselves", "police"]
+      }
+    },
+    {
+      "post_id": "POST-012",
+      "platform": "Twitter",
+      "author_handle": "@disinfo_spread",
+      "text": "CONFIRMED: Water supply in Jaipur poisoned by rival state. 500+ hospitalized. Government covering up. Boil all water NOW!",
+      "timestamp": "2026-07-22T20:15:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Jaipur", "lat": 26.9124, "lng": 75.7873 },
+      "engagement_counts": { "likes": 7800, "shares": 6500, "comments": 3200 },
+      "classification": {
+        "threat_category": "FakeNews",
+        "sentiment": "negative",
+        "confidence": 0.94,
+        "keywords": ["CONFIRMED", "poisoned", "covering up", "500+ hospitalized"]
+      }
+    },
+    {
+      "post_id": "POST-013",
+      "platform": "Facebook",
+      "author_handle": "JanAwaaz_HI",
+      "text": "भाइयों, हथियार तैयार रखो। अगर पुलिस नहीं आई तो हम खुद न्याय करेंगे। कल सुबह 6 बजे तैयार रहो।",
+      "timestamp": "2026-07-22T22:00:00Z",
+      "detected_language": "hi",
+      "geo_location": { "city": "Varanasi", "lat": 25.3176, "lng": 82.9739 },
+      "engagement_counts": { "likes": 345, "shares": 289, "comments": 156 },
+      "classification": {
+        "threat_category": "IncitementToViolence",
+        "sentiment": "negative",
+        "confidence": 0.98,
+        "keywords": ["हथियार", "न्याय करेंगे", "तैयार रहो"]
+      }
+    },
+    {
+      "post_id": "POST-014",
+      "platform": "Twitter",
+      "author_handle": "@tech_community_in",
+      "text": "Excited to announce our new coding bootcamp in Hyderabad! Free for students from underprivileged backgrounds. Apply now! #TechForAll",
+      "timestamp": "2026-07-22T06:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Hyderabad", "lat": 17.385, "lng": 78.4867 },
+      "engagement_counts": { "likes": 4500, "shares": 2100, "comments": 567 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.99,
+        "keywords": ["coding bootcamp", "free", "students", "TechForAll"]
+      }
+    },
+    {
+      "post_id": "POST-015",
+      "platform": "Telegram",
+      "author_handle": "shadow_ops_gj",
+      "text": "New target list uploaded. Check pinned message. Operations begin Thursday. Silence is key. Jai Hind.",
+      "timestamp": "2026-07-22T23:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Vadodara", "lat": 22.3072, "lng": 73.1812 },
+      "engagement_counts": { "likes": 89, "shares": 12, "comments": 5 },
+      "classification": {
+        "threat_category": "IncitementToViolence",
+        "sentiment": "negative",
+        "confidence": 0.91,
+        "keywords": ["target list", "operations", "silence"]
+      }
+    },
+    {
+      "post_id": "POST-016",
+      "platform": "Facebook",
+      "author_handle": "GandhiNagar_News",
+      "text": "ગાંધીનગર municipal corporation એ નવી drainage system માટે 200 કરોડ ખર્ચ્યા. Citizens happy with the improvement. #SmartCity",
+      "timestamp": "2026-07-22T10:00:00Z",
+      "detected_language": "mixed",
+      "geo_location": { "city": "Gandhinagar", "lat": 23.2156, "lng": 72.6369 },
+      "engagement_counts": { "likes": 1200, "shares": 234, "comments": 89 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.95,
+        "keywords": ["drainage", "improvement", "SmartCity"]
+      }
+    },
+    {
+      "post_id": "POST-017",
+      "platform": "Twitter",
+      "author_handle": "@flame_thrower_99",
+      "text": "These outsiders have taken over our jobs, our land, our future. How long will we stay silent? Time to reclaim what's ours! 🔥",
+      "timestamp": "2026-07-22T17:45:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Indore", "lat": 22.7196, "lng": 75.8577 },
+      "engagement_counts": { "likes": 3456, "shares": 1890, "comments": 756 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.9,
+        "keywords": ["outsiders", "reclaim", "stay silent"]
+      }
+    },
+    {
+      "post_id": "POST-018",
+      "platform": "Facebook",
+      "author_handle": "MumbaiVibes",
+      "text": "Beautiful sunset at Marine Drive today! Mumbai never stops amazing me. 🌅 #MumbaiDiaries #MarineDrive",
+      "timestamp": "2026-07-22T18:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Mumbai", "lat": 19.076, "lng": 72.8777 },
+      "engagement_counts": { "likes": 8900, "shares": 1234, "comments": 456 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.99,
+        "keywords": ["sunset", "Marine Drive", "amazing"]
+      }
+    },
+    {
+      "post_id": "POST-019",
+      "platform": "Telegram",
+      "author_handle": "desibots_network",
+      "text": "Automated message: Share this 50 times or bad luck for 7 years. India's economy will crash by August. Exposed government lies!",
+      "timestamp": "2026-07-22T12:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Kolkata", "lat": 22.5726, "lng": 88.3639 },
+      "engagement_counts": { "likes": 12000, "shares": 9800, "comments": 4500 },
+      "classification": {
+        "threat_category": "FakeNews",
+        "sentiment": "negative",
+        "confidence": 0.97,
+        "keywords": ["automated", "share 50 times", "economy crash", "exposed"]
+      }
+    },
+    {
+      "post_id": "POST-020",
+      "platform": "Twitter",
+      "author_handle": "@hatred_machine",
+      "text": "ये minority वाले सब एक जैसे हैं। Trust मत करो। They only care about themselves. Our tolerance has limits! #Enough",
+      "timestamp": "2026-07-22T19:00:00Z",
+      "detected_language": "mixed",
+      "geo_location": { "city": "Delhi", "lat": 28.6139, "lng": 77.209 },
+      "engagement_counts": { "likes": 2890, "shares": 1567, "comments": 890 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.93,
+        "keywords": ["minority", "trust मत करो", "tolerance has limits"]
+      }
+    },
+    {
+      "post_id": "POST-021",
+      "platform": "Facebook",
+      "author_handle": "SuratSilkCity",
+      "text": "Surat's diamond industry exports reach record $25 billion this quarter! Proud of our hardworking karigars. 💎",
+      "timestamp": "2026-07-22T08:00:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Surat", "lat": 21.1702, "lng": 72.8311 },
+      "engagement_counts": { "likes": 5670, "shares": 890, "comments": 234 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.98,
+        "keywords": ["diamond", "exports", "record", "proud"]
+      }
+    },
+    {
+      "post_id": "POST-022",
+      "platform": "Twitter",
+      "author_handle": "@misinfo_alert",
+      "text": "URGENT: Drinking milk after eating fish causes permanent skin disease. Ayurvedic doctors confirm. Share to save someone's life!",
+      "timestamp": "2026-07-22T14:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Bhopal", "lat": 23.2599, "lng": 77.4126 },
+      "engagement_counts": { "likes": 4560, "shares": 3890, "comments": 1230 },
+      "classification": {
+        "threat_category": "FakeNews",
+        "sentiment": "negative",
+        "confidence": 0.92,
+        "keywords": ["URGENT", "permanent skin disease", "Ayurvedic confirm", "share to save"]
+      }
+    },
+    {
+      "post_id": "POST-023",
+      "platform": "Telegram",
+      "author_handle": "guj_patriots",
+      "text": "આ દેશદ્રોહીઓને સબક શીખવાડવો પડશે. બધા ભાઈઓ તૈયાર રહો. Location tomorrow share થશે.",
+      "timestamp": "2026-07-22T21:15:00Z",
+      "detected_language": "gu",
+      "geo_location": { "city": "Bhavnagar", "lat": 21.7645, "lng": 72.1519 },
+      "engagement_counts": { "likes": 234, "shares": 178, "comments": 89 },
+      "classification": {
+        "threat_category": "IncitementToViolence",
+        "sentiment": "negative",
+        "confidence": 0.94,
+        "keywords": ["દેશદ્રોહી", "સબક", "તૈયાર"]
+      }
+    },
+    {
+      "post_id": "POST-024",
+      "platform": "Facebook",
+      "author_handle": "DelhiFoodWalk",
+      "text": "Best chole bhature at Sita Ram Diwan Chand, Paharganj! 40 years of consistent taste. Must visit! 🍛 #DelhiFood",
+      "timestamp": "2026-07-22T12:45:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Delhi", "lat": 28.6139, "lng": 77.209 },
+      "engagement_counts": { "likes": 6700, "shares": 890, "comments": 345 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.99,
+        "keywords": ["chole bhature", "consistent taste", "DelhiFood"]
+      }
+    },
+    {
+      "post_id": "POST-025",
+      "platform": "Twitter",
+      "author_handle": "@division_seeds",
+      "text": "They're breeding like rabbits and will outnumber us in 10 years. Wake up before it's too late! Demographics don't lie! 📊",
+      "timestamp": "2026-07-22T16:00:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Nagpur", "lat": 21.1458, "lng": 79.0882 },
+      "engagement_counts": { "likes": 4100, "shares": 2890, "comments": 1340 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.95,
+        "keywords": ["breeding", "outnumber", "wake up", "demographics"]
+      }
+    },
+    {
+      "post_id": "POST-026",
+      "platform": "Telegram",
+      "author_handle": "cyber_army_ops",
+      "text": "Phase 2 initiated. All handles switch to backup accounts. Coordinate hashtag storm at 8 PM IST. Target trending page.",
+      "timestamp": "2026-07-22T19:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Hyderabad", "lat": 17.385, "lng": 78.4867 },
+      "engagement_counts": { "likes": 67, "shares": 45, "comments": 12 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.87,
+        "keywords": ["Phase 2", "backup accounts", "hashtag storm", "coordinate"]
+      }
+    },
+    {
+      "post_id": "POST-027",
+      "platform": "Facebook",
+      "author_handle": "KolkataArtScene",
+      "text": "Durga Puja preparations in full swing! Artists from Kumartuli working day and night on stunning idols. Can't wait! 🎨",
+      "timestamp": "2026-07-22T09:45:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Kolkata", "lat": 22.5726, "lng": 88.3639 },
+      "engagement_counts": { "likes": 7800, "shares": 1234, "comments": 567 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.99,
+        "keywords": ["Durga Puja", "Kumartuli", "artists", "idols"]
+      }
+    },
+    {
+      "post_id": "POST-028",
+      "platform": "Twitter",
+      "author_handle": "@panic_poster",
+      "text": "JUST IN: Earthquake of 8.5 magnitude predicted for Gujarat coast tomorrow by NASA. Not reported by Indian media. EVACUATE NOW!",
+      "timestamp": "2026-07-22T22:30:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Ahmedabad", "lat": 23.0225, "lng": 72.5714 },
+      "engagement_counts": { "likes": 9200, "shares": 8100, "comments": 4560 },
+      "classification": {
+        "threat_category": "FakeNews",
+        "sentiment": "negative",
+        "confidence": 0.99,
+        "keywords": ["JUST IN", "earthquake", "predicted by NASA", "EVACUATE"]
+      }
+    },
+    {
+      "post_id": "POST-029",
+      "platform": "Facebook",
+      "author_handle": "AmdavadiMasti",
+      "text": "અમદાવાદ ની law and order situation worst છે. Police ને paise આપીને criminals છૂટી જાય છે. System total corrupt!",
+      "timestamp": "2026-07-22T20:00:00Z",
+      "detected_language": "mixed",
+      "geo_location": { "city": "Ahmedabad", "lat": 23.0225, "lng": 72.5714 },
+      "engagement_counts": { "likes": 1890, "shares": 756, "comments": 345 },
+      "classification": {
+        "threat_category": "Inflammatory",
+        "sentiment": "negative",
+        "confidence": 0.78,
+        "keywords": ["law and order", "corrupt", "criminals"]
+      }
+    },
+    {
+      "post_id": "POST-030",
+      "platform": "Twitter",
+      "author_handle": "@clean_india_vol",
+      "text": "Organized a beach cleanup drive at Juhu Beach today. 200 volunteers, 3 tons of waste collected! Let's keep it going! 🌊 #SwachhBharat",
+      "timestamp": "2026-07-22T17:00:00Z",
+      "detected_language": "en",
+      "geo_location": { "city": "Mumbai", "lat": 19.076, "lng": 72.8777 },
+      "engagement_counts": { "likes": 12000, "shares": 3456, "comments": 890 },
+      "classification": {
+        "threat_category": "Neutral",
+        "sentiment": "positive",
+        "confidence": 0.99,
+        "keywords": ["beach cleanup", "volunteers", "SwachhBharat"]
+      }
+    }
+  ],
+  "alerts": [
+    {
+      "alert_id": "ALERT-001",
+      "type": "coordinated_campaign",
+      "severity": 5,
+      "title": "Coordinated Hashtag Storm Detected",
+      "description": "Multiple bot-like accounts coordinating a hashtag storm targeting trending page. 45 accounts identified with synchronized posting patterns within 15-min window.",
+      "related_post_ids": ["POST-026", "POST-019"],
+      "timestamp": "2026-07-22T19:45:00Z",
+      "acknowledged": false
+    },
+    {
+      "alert_id": "ALERT-002",
+      "type": "high_severity_post",
+      "severity": 5,
+      "title": "Direct Incitement — Weapons Mentioned",
+      "description": "Post POST-013 contains explicit call to arms with specific time/location coordination. Hindi language, Varanasi geo-tag. Immediate review recommended.",
+      "related_post_ids": ["POST-013"],
+      "timestamp": "2026-07-22T22:05:00Z",
+      "acknowledged": false
+    },
+    {
+      "alert_id": "ALERT-003",
+      "type": "spike",
+      "severity": 4,
+      "title": "Fake Earthquake Warning Viral Spike",
+      "description": "Post claiming NASA earthquake prediction for Gujarat coast has gone viral (8100+ shares in 2 hours). No NASA advisory exists. Panic-inducing content spreading rapidly.",
+      "related_post_ids": ["POST-028"],
+      "timestamp": "2026-07-22T23:00:00Z",
+      "acknowledged": false
+    },
+    {
+      "alert_id": "ALERT-004",
+      "type": "new_cluster",
+      "severity": 4,
+      "title": "New Bot Cluster — Anti-Minority Network",
+      "description": "Cluster of 12 accounts identified posting inflammatory content targeting minority communities across Twitter and Facebook. High coordination score (0.89).",
+      "related_post_ids": ["POST-020", "POST-025", "POST-017"],
+      "timestamp": "2026-07-22T20:30:00Z",
+      "acknowledged": false
+    },
+    {
+      "alert_id": "ALERT-005",
+      "type": "spike",
+      "severity": 3,
+      "title": "Water Poisoning Misinformation Trending",
+      "description": "False claim about water supply poisoning in Jaipur gaining traction. 6500+ shares. Counter-narratives from official sources not yet visible.",
+      "related_post_ids": ["POST-012"],
+      "timestamp": "2026-07-22T21:00:00Z",
+      "acknowledged": true,
+      "acknowledged_by": "analyst_ravi",
+      "acknowledged_at": "2026-07-22T21:15:00Z"
+    },
+    {
+      "alert_id": "ALERT-006",
+      "type": "high_severity_post",
+      "severity": 4,
+      "title": "Covert Operations Planning Detected",
+      "description": "Telegram message (POST-015) references 'target list' and 'operations' with specific day mentioned. Encrypted language patterns suggest organized group activity.",
+      "related_post_ids": ["POST-015"],
+      "timestamp": "2026-07-22T23:45:00Z",
+      "acknowledged": false
+    },
+    {
+      "alert_id": "ALERT-007",
+      "type": "spike",
+      "severity": 2,
+      "title": "Anti-Vaccine Misinformation Resurgence",
+      "description": "Microchip-in-vaccine conspiracy post regaining traction (4200 shares). Previously debunked content being recirculated with new framing.",
+      "related_post_ids": ["POST-006"],
+      "timestamp": "2026-07-22T10:00:00Z",
+      "acknowledged": true,
+      "acknowledged_by": "analyst_priya",
+      "acknowledged_at": "2026-07-22T10:30:00Z"
+    },
+    {
+      "alert_id": "ALERT-008",
+      "type": "coordinated_campaign",
+      "severity": 3,
+      "title": "Cross-Platform Inflammatory Campaign — Gujarat",
+      "description": "Related inflammatory posts detected across Facebook and Telegram in Gujarat (Rajkot, Bhavnagar). Language mix of Gujarati and English. Possible coordinated regional campaign.",
+      "related_post_ids": ["POST-005", "POST-011", "POST-023"],
+      "timestamp": "2026-07-22T21:30:00Z",
+      "acknowledged": false
+    }
+  ],
+  "trend_spikes": [
+    {
+      "spike_id": "TREND-001",
+      "keyword": "#SaveOurLand",
+      "frequency_timeseries": [
+        { "timestamp": "2026-07-22T06:00:00Z", "count": 12 },
+        { "timestamp": "2026-07-22T08:00:00Z", "count": 45 },
+        { "timestamp": "2026-07-22T10:00:00Z", "count": 234 },
+        { "timestamp": "2026-07-22T12:00:00Z", "count": 567 },
+        { "timestamp": "2026-07-22T14:00:00Z", "count": 890 },
+        { "timestamp": "2026-07-22T16:00:00Z", "count": 1230 },
+        { "timestamp": "2026-07-22T18:00:00Z", "count": 1890 },
+        { "timestamp": "2026-07-22T20:00:00Z", "count": 2340 },
+        { "timestamp": "2026-07-22T22:00:00Z", "count": 2100 }
+      ],
+      "z_score": 4.2,
+      "detected_at": "2026-07-22T12:00:00Z"
+    },
+    {
+      "spike_id": "TREND-002",
+      "keyword": "earthquake Gujarat",
+      "frequency_timeseries": [
+        { "timestamp": "2026-07-22T18:00:00Z", "count": 5 },
+        { "timestamp": "2026-07-22T19:00:00Z", "count": 12 },
+        { "timestamp": "2026-07-22T20:00:00Z", "count": 89 },
+        { "timestamp": "2026-07-22T21:00:00Z", "count": 456 },
+        { "timestamp": "2026-07-22T22:00:00Z", "count": 2340 },
+        { "timestamp": "2026-07-22T23:00:00Z", "count": 5670 }
+      ],
+      "z_score": 7.8,
+      "detected_at": "2026-07-22T22:00:00Z"
+    },
+    {
+      "spike_id": "TREND-003",
+      "keyword": "water poisoning Jaipur",
+      "frequency_timeseries": [
+        { "timestamp": "2026-07-22T16:00:00Z", "count": 8 },
+        { "timestamp": "2026-07-22T17:00:00Z", "count": 34 },
+        { "timestamp": "2026-07-22T18:00:00Z", "count": 189 },
+        { "timestamp": "2026-07-22T19:00:00Z", "count": 567 },
+        { "timestamp": "2026-07-22T20:00:00Z", "count": 1230 },
+        { "timestamp": "2026-07-22T21:00:00Z", "count": 1890 },
+        { "timestamp": "2026-07-22T22:00:00Z", "count": 1650 }
+      ],
+      "z_score": 5.1,
+      "detected_at": "2026-07-22T19:00:00Z"
+    },
+    {
+      "spike_id": "TREND-004",
+      "keyword": "vaccine microchip",
+      "frequency_timeseries": [
+        { "timestamp": "2026-07-22T04:00:00Z", "count": 23 },
+        { "timestamp": "2026-07-22T06:00:00Z", "count": 45 },
+        { "timestamp": "2026-07-22T08:00:00Z", "count": 234 },
+        { "timestamp": "2026-07-22T10:00:00Z", "count": 890 },
+        { "timestamp": "2026-07-22T12:00:00Z", "count": 1200 },
+        { "timestamp": "2026-07-22T14:00:00Z", "count": 980 },
+        { "timestamp": "2026-07-22T16:00:00Z", "count": 670 }
+      ],
+      "z_score": 3.4,
+      "detected_at": "2026-07-22T08:00:00Z"
+    },
+    {
+      "spike_id": "TREND-005",
+      "keyword": "outsiders jobs",
+      "frequency_timeseries": [
+        { "timestamp": "2026-07-22T12:00:00Z", "count": 15 },
+        { "timestamp": "2026-07-22T14:00:00Z", "count": 67 },
+        { "timestamp": "2026-07-22T16:00:00Z", "count": 234 },
+        { "timestamp": "2026-07-22T18:00:00Z", "count": 890 },
+        { "timestamp": "2026-07-22T20:00:00Z", "count": 1560 },
+        { "timestamp": "2026-07-22T22:00:00Z", "count": 1340 }
+      ],
+      "z_score": 4.6,
+      "detected_at": "2026-07-22T18:00:00Z"
+    }
+  ]
+}

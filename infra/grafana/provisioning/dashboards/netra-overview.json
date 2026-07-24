@@ -1,0 +1,100 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Posts Ingested (per platform)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(posts_ingested_total[5m])",
+          "legendFormat": "{{platform}}"
+        }
+      ]
+    },
+    {
+      "title": "Posts Deduplicated (per platform)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(posts_deduplicated_total[5m])",
+          "legendFormat": "{{platform}}"
+        }
+      ]
+    },
+    {
+      "title": "Classification Latency (p95)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(classification_duration_seconds_bucket[5m]))"
+        }
+      ]
+    },
+    {
+      "title": "Alerts Generated",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "increase(alerts_generated_total[1h])"
+        }
+      ]
+    },
+    {
+      "title": "API Errors (per platform)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(api_errors_total[5m])",
+          "legendFormat": "{{platform}} - {{error_type}}"
+        }
+      ]
+    },
+    {
+      "title": "Crawl Duration (per platform)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "crawl_duration_seconds_sum / crawl_duration_seconds_count",
+          "legendFormat": "{{platform}}"
+        }
+      ]
+    },
+    {
+      "title": "Trend Spikes Detected",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "increase(trend_spikes_detected_total[1h])"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["netra", "threat-analyzer"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "NETRA — Threat Analyzer Overview",
+  "uid": "netra-overview",
+  "version": 1
+}

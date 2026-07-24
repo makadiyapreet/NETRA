@@ -1,0 +1,74 @@
+[
+  {
+    "alert_id": "alert-5b8c33a4fa57",
+    "post_id": "tw-20260720-001",
+    "threat_category": "Inflammatory",
+    "severity": 3,
+    "triggering_reason": "Post classified as Inflammatory with 70% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "alert_id": "alert-b6eb9d991414",
+    "post_id": "ig-20260720-003",
+    "threat_category": "FakeNews",
+    "severity": 3,
+    "triggering_reason": "Post classified as FakeNews with 75% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "alert_id": "alert-e5b5308bdac7",
+    "post_id": "fb-20260720-009",
+    "threat_category": "FakeNews",
+    "severity": 3,
+    "triggering_reason": "Post classified as FakeNews with 75% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "alert_id": "alert-0b58404093e5",
+    "post_id": "tw-20260720-017",
+    "threat_category": "FakeNews",
+    "severity": 3,
+    "triggering_reason": "Post classified as FakeNews with 75% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "alert_id": "alert-7bcb13d7b141",
+    "post_id": "tw-20260720-019",
+    "threat_category": "IncitementToViolence",
+    "severity": 5,
+    "triggering_reason": "Post classified as IncitementToViolence with 85% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "alert_id": "alert-bdc4d8b57c11",
+    "post_id": "tw-20260720-026",
+    "threat_category": "FakeNews",
+    "severity": 3,
+    "triggering_reason": "Post classified as FakeNews with 75% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "alert_id": "alert-a3d35a7c05db",
+    "post_id": "tw-20260720-027",
+    "threat_category": "FakeNews",
+    "severity": 3,
+    "triggering_reason": "Post classified as FakeNews with 75% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  },
+  {
+    "alert_id": "alert-8177c05c8359",
+    "post_id": "tw-20260720-028",
+    "threat_category": "FakeNews",
+    "severity": 3,
+    "triggering_reason": "Post classified as FakeNews with 75% confidence.",
+    "bot_cluster_id": null,
+    "created_at": "2026-07-22T18:37:03.223614+00:00"
+  }
+]

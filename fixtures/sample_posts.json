@@ -1,0 +1,682 @@
+[
+  {
+    "post_id": "tw-20260720-001",
+    "platform": "twitter",
+    "author_id": "twuser_1001",
+    "author_handle": "@ahmedabad_news24",
+    "text": "ગુજરાતમાં કોમી તણાવની ગંભીર ઘટના. પોલીસ મૌન છે. લોકો ડરી ગયા છે. શું થઈ રહ્યું છે અમદાવાદમાં? #AhmedabadAlert #GujaratNews",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T10:15:00Z",
+    "geo_location": {
+      "lat": 23.0225,
+      "lng": 72.5714,
+      "place_name": "Ahmedabad, Gujarat"
+    },
+    "hashtags": ["AhmedabadAlert", "GujaratNews"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 342, "shares": 156, "comments": 89 },
+    "raw_payload": {
+      "account_created_at": "2019-03-15T00:00:00Z",
+      "follower_count": 12500,
+      "following_count": 890,
+      "post_count": 4520
+    }
+  },
+  {
+    "post_id": "tw-20260720-002",
+    "platform": "twitter",
+    "author_id": "twuser_1002",
+    "author_handle": "@rajkot_citizen",
+    "text": "રાજકોટમાં નવી હોસ્પિટલ ખુલી. સરકારે આરોગ્ય સેવાઓ સુધારવા માટે સારું પગલું ભર્યું. #HealthcareGujarat",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T11:30:00Z",
+    "geo_location": {
+      "lat": 22.3039,
+      "lng": 70.8022,
+      "place_name": "Rajkot, Gujarat"
+    },
+    "hashtags": ["HealthcareGujarat"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 89, "shares": 23, "comments": 12 },
+    "raw_payload": {
+      "account_created_at": "2020-06-10T00:00:00Z",
+      "follower_count": 3400,
+      "following_count": 520,
+      "post_count": 1890
+    }
+  },
+  {
+    "post_id": "ig-20260720-003",
+    "platform": "instagram",
+    "author_id": "iguser_2001",
+    "author_handle": "@surat_vibes",
+    "text": "સુરતમાં ધાર્મિક સ્થળ પર હુમલો થયો એવી અફવા ફેલાઈ રહી છે!!! કોઈ CONFIRM કરો!!! URGENT!!! ફેલાવો બધાને!!! #SuratAttack #BREAKING",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T14:00:00Z",
+    "geo_location": {
+      "lat": 21.1702,
+      "lng": 72.8311,
+      "place_name": "Surat, Gujarat"
+    },
+    "hashtags": ["SuratAttack", "BREAKING"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/surat_fake_1.jpg"],
+    "engagement_counts": { "likes": 1200, "shares": 890, "comments": 456 },
+    "raw_payload": {
+      "account_created_at": "2026-07-01T00:00:00Z",
+      "follower_count": 45,
+      "following_count": 1200,
+      "post_count": 340
+    }
+  },
+  {
+    "post_id": "tw-20260720-004",
+    "platform": "twitter",
+    "author_id": "twuser_1003",
+    "author_handle": "@vadodara_updates",
+    "text": "વડોદરામાં શાંતિ માર્ચ યોજાયો. તમામ સમુદાયના લોકો સાથે આવ્યા. એકતાનો સુંદર સંદેશ. #VadodaraPeace #Unity",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T09:00:00Z",
+    "geo_location": {
+      "lat": 22.3072,
+      "lng": 73.1812,
+      "place_name": "Vadodara, Gujarat"
+    },
+    "hashtags": ["VadodaraPeace", "Unity"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 567, "shares": 234, "comments": 78 },
+    "raw_payload": {
+      "account_created_at": "2018-01-20T00:00:00Z",
+      "follower_count": 8900,
+      "following_count": 450,
+      "post_count": 6700
+    }
+  },
+  {
+    "post_id": "fb-20260720-005",
+    "platform": "facebook",
+    "author_id": "fbuser_3001",
+    "author_handle": "ગુજરાત_સમાચાર_પેજ",
+    "text": "ગાંધીનગરમાં એક ચોક્કસ સમુદાયના લોકો પર હુમલો. તેઓને બહાર કાઢો! આ લોકો અમારા વિસ્તારમાં નથી જોઈતા! #Gandhinagar",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T16:45:00Z",
+    "geo_location": {
+      "lat": 23.2156,
+      "lng": 72.6369,
+      "place_name": "Gandhinagar, Gujarat"
+    },
+    "hashtags": ["Gandhinagar"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 890, "shares": 567, "comments": 234 },
+    "raw_payload": {
+      "account_created_at": "2021-08-10T00:00:00Z",
+      "follower_count": 15000,
+      "following_count": 200,
+      "post_count": 3200
+    }
+  },
+  {
+    "post_id": "tw-20260720-006",
+    "platform": "twitter",
+    "author_id": "twuser_1004",
+    "author_handle": "@junagadh_local",
+    "text": "જૂનાગઢમાં ગીર ફોરેસ્ટ પાસે સિંહ દેખાયો. વન વિભાગે સલામતી ચેતવણી જાહેર કરી. #GirLion #WildlifeGujarat",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T07:30:00Z",
+    "geo_location": {
+      "lat": 21.5222,
+      "lng": 70.4579,
+      "place_name": "Junagadh, Gujarat"
+    },
+    "hashtags": ["GirLion", "WildlifeGujarat"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/gir_lion.jpg"],
+    "engagement_counts": { "likes": 1500, "shares": 678, "comments": 190 },
+    "raw_payload": {
+      "account_created_at": "2017-11-05T00:00:00Z",
+      "follower_count": 22000,
+      "following_count": 340,
+      "post_count": 9800
+    }
+  },
+  {
+    "post_id": "yt-20260720-007",
+    "platform": "youtube",
+    "author_id": "ytuser_4001",
+    "author_handle": "@bhavnagar_talks",
+    "text": "ભાવનગરમાં સ્થાનિક ઉદ્યોગપતિએ 500 લોકોને રોજગાર આપ્યો. ખૂબ જ પ્રેરણાદાયી વાર્તા. #BhavnagarJobs",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T12:00:00Z",
+    "geo_location": {
+      "lat": 21.7645,
+      "lng": 72.1519,
+      "place_name": "Bhavnagar, Gujarat"
+    },
+    "hashtags": ["BhavnagarJobs"],
+    "mentions": [],
+    "media_urls": ["https://youtube.com/watch?v=example_bh1"],
+    "engagement_counts": { "likes": 2300, "shares": 890, "comments": 345 },
+    "raw_payload": {
+      "account_created_at": "2016-05-20T00:00:00Z",
+      "follower_count": 45000,
+      "following_count": 120,
+      "post_count": 780
+    }
+  },
+  {
+    "post_id": "tw-20260720-008",
+    "platform": "twitter",
+    "author_id": "twuser_1005",
+    "author_handle": "@delhi_pulse",
+    "text": "दिल्ली में आज सड़कों पर भारी ट्रैफिक. मेट्रो ले लो भाइयों. #DelhiTraffic #DailyCommute",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T08:00:00Z",
+    "geo_location": {
+      "lat": 28.7041,
+      "lng": 77.1025,
+      "place_name": "New Delhi, Delhi"
+    },
+    "hashtags": ["DelhiTraffic", "DailyCommute"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 234, "shares": 56, "comments": 89 },
+    "raw_payload": {
+      "account_created_at": "2020-02-14T00:00:00Z",
+      "follower_count": 5600,
+      "following_count": 1200,
+      "post_count": 3400
+    }
+  },
+  {
+    "post_id": "fb-20260720-009",
+    "platform": "facebook",
+    "author_id": "fbuser_3002",
+    "author_handle": "मुंबई_न्यूज़_हब",
+    "text": "BREAKING: मुंबई में पानी में ज़हर मिलाया गया है!!! सरकार छुपा रही है!!! अभी शेयर करो सबको बताओ!!! लाखों लोग ख़तरे में!!! #MumbaiWaterPoisoned #URGENT",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T13:30:00Z",
+    "geo_location": {
+      "lat": 19.076,
+      "lng": 72.8777,
+      "place_name": "Mumbai, Maharashtra"
+    },
+    "hashtags": ["MumbaiWaterPoisoned", "URGENT"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/fake_water_report.jpg"],
+    "engagement_counts": { "likes": 4500, "shares": 3200, "comments": 1200 },
+    "raw_payload": {
+      "account_created_at": "2026-06-25T00:00:00Z",
+      "follower_count": 23,
+      "following_count": 980,
+      "post_count": 567
+    }
+  },
+  {
+    "post_id": "ig-20260720-010",
+    "platform": "instagram",
+    "author_id": "iguser_2002",
+    "author_handle": "@lucknow_diaries",
+    "text": "लखनऊ की बिरयानी खाई क्या? टुंडे कबाब और बिरयानी — बेस्ट कॉम्बो! #LucknowFood #Foodie",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T18:00:00Z",
+    "geo_location": {
+      "lat": 26.8467,
+      "lng": 80.9462,
+      "place_name": "Lucknow, UP"
+    },
+    "hashtags": ["LucknowFood", "Foodie"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/biryani.jpg"],
+    "engagement_counts": { "likes": 6700, "shares": 1200, "comments": 890 },
+    "raw_payload": {
+      "account_created_at": "2019-09-01T00:00:00Z",
+      "follower_count": 34000,
+      "following_count": 560,
+      "post_count": 2100
+    }
+  },
+  {
+    "post_id": "tw-20260720-011",
+    "platform": "twitter",
+    "author_id": "twuser_1006",
+    "author_handle": "@jaipur_watchdog",
+    "text": "जयपुर में एक समुदाय विशेष के लोग इलाके पर कब्ज़ा कर रहे हैं. ये देश को बर्बाद कर देंगे. इनको रोकना ज़रूरी है. हिंदुओं जागो! #JaipurAlert #Hindutva",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T15:00:00Z",
+    "geo_location": {
+      "lat": 26.9124,
+      "lng": 75.7873,
+      "place_name": "Jaipur, Rajasthan"
+    },
+    "hashtags": ["JaipurAlert", "Hindutva"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 1800, "shares": 1200, "comments": 567 },
+    "raw_payload": {
+      "account_created_at": "2022-01-01T00:00:00Z",
+      "follower_count": 7800,
+      "following_count": 2300,
+      "post_count": 5600
+    }
+  },
+  {
+    "post_id": "tw-20260720-012",
+    "platform": "twitter",
+    "author_id": "twuser_1007",
+    "author_handle": "@varanasi_heritage",
+    "text": "वाराणसी के घाटों की सुबह की सुंदर तस्वीरें. गंगा आरती का अद्भुत नज़ारा. #VaranasiVibes #IncredibleIndia",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T06:00:00Z",
+    "geo_location": {
+      "lat": 25.3176,
+      "lng": 82.9739,
+      "place_name": "Varanasi, UP"
+    },
+    "hashtags": ["VaranasiVibes", "IncredibleIndia"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/varanasi_ghat.jpg"],
+    "engagement_counts": { "likes": 12000, "shares": 3400, "comments": 890 },
+    "raw_payload": {
+      "account_created_at": "2015-08-15T00:00:00Z",
+      "follower_count": 89000,
+      "following_count": 230,
+      "post_count": 12000
+    }
+  },
+  {
+    "post_id": "fb-20260720-013",
+    "platform": "facebook",
+    "author_id": "fbuser_3003",
+    "author_handle": "भोपाल_जनता",
+    "text": "भोपाल में सरकारी अधिकारी भ्रष्ट हैं. नया पुल बनने में 5 साल लग गए. जनता परेशान. #BhopalCorruption #BadGovernance",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T10:00:00Z",
+    "geo_location": {
+      "lat": 23.2599,
+      "lng": 77.4126,
+      "place_name": "Bhopal, MP"
+    },
+    "hashtags": ["BhopalCorruption", "BadGovernance"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 456, "shares": 234, "comments": 167 },
+    "raw_payload": {
+      "account_created_at": "2021-03-10T00:00:00Z",
+      "follower_count": 6700,
+      "following_count": 890,
+      "post_count": 2300
+    }
+  },
+  {
+    "post_id": "yt-20260720-014",
+    "platform": "youtube",
+    "author_id": "ytuser_4002",
+    "author_handle": "@indore_clean_city",
+    "text": "इंदौर फिर से सबसे स्वच्छ शहर बना! नगरपालिका और नागरिकों की मेहनत रंग लाई. बधाई! #SwachhIndore #CleanCity",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T14:30:00Z",
+    "geo_location": {
+      "lat": 22.7196,
+      "lng": 75.8577,
+      "place_name": "Indore, MP"
+    },
+    "hashtags": ["SwachhIndore", "CleanCity"],
+    "mentions": [],
+    "media_urls": ["https://youtube.com/watch?v=example_ind1"],
+    "engagement_counts": { "likes": 8900, "shares": 2300, "comments": 567 },
+    "raw_payload": {
+      "account_created_at": "2018-06-15T00:00:00Z",
+      "follower_count": 56000,
+      "following_count": 180,
+      "post_count": 450
+    }
+  },
+  {
+    "post_id": "tw-20260720-015",
+    "platform": "twitter",
+    "author_id": "twuser_1008",
+    "author_handle": "@patna_rage",
+    "text": "[PLACEHOLDER — IncitementToViolence: This slot reserved for a real labeled example from HASOC/TRAC-2 dataset. Replace with an actual dataset sample during prepare_datasets.py integration.]",
+    "language_hint": "hi",
+    "created_at": "2026-07-20T17:00:00Z",
+    "geo_location": {
+      "lat": 25.6093,
+      "lng": 85.1376,
+      "place_name": "Patna, Bihar"
+    },
+    "hashtags": ["PatnaViolence"],
+    "mentions": ["@target_handle"],
+    "media_urls": [],
+    "engagement_counts": { "likes": 3400, "shares": 2100, "comments": 890 },
+    "raw_payload": {
+      "account_created_at": "2026-07-10T00:00:00Z",
+      "follower_count": 12,
+      "following_count": 1500,
+      "post_count": 890
+    }
+  },
+  {
+    "post_id": "ig-20260720-016",
+    "platform": "instagram",
+    "author_id": "iguser_2003",
+    "author_handle": "@hinglish_memer",
+    "text": "Bhai ye government ka naya scheme dekha? Sab milke paisa kha rahe hain aur hum pagal baithe hain. Koi kuch nahi karega is desh mein. #CorruptionKing #SabChorHain",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T19:00:00Z",
+    "geo_location": null,
+    "hashtags": ["CorruptionKing", "SabChorHain"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 2300, "shares": 890, "comments": 345 },
+    "raw_payload": {
+      "account_created_at": "2023-04-01T00:00:00Z",
+      "follower_count": 12000,
+      "following_count": 3400,
+      "post_count": 4500
+    }
+  },
+  {
+    "post_id": "tw-20260720-017",
+    "platform": "twitter",
+    "author_id": "twuser_1009",
+    "author_handle": "@desi_truth_bomb",
+    "text": "BREAKING: Vaccine mein chip daal ke sab ko track kar rahe hain! Ye sab plan hai global elites ka! Apne bacchon ko mat lagwao! SHARE KARO JALDI! #VaccineScam #WakeUpIndia",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T20:00:00Z",
+    "geo_location": null,
+    "hashtags": ["VaccineScam", "WakeUpIndia"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/fake_vaccine_chart.jpg"],
+    "engagement_counts": { "likes": 5600, "shares": 4500, "comments": 2300 },
+    "raw_payload": {
+      "account_created_at": "2026-07-15T00:00:00Z",
+      "follower_count": 34,
+      "following_count": 2100,
+      "post_count": 1200
+    }
+  },
+  {
+    "post_id": "fb-20260720-018",
+    "platform": "facebook",
+    "author_id": "fbuser_3004",
+    "author_handle": "hinglish_news_daily",
+    "text": "Aaj ka weather bohot mast hai Mumbai mein. Evening walk ke liye perfect. Enjoy karo dosto! #MumbaiWeather #GoodVibes",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T17:30:00Z",
+    "geo_location": {
+      "lat": 19.076,
+      "lng": 72.8777,
+      "place_name": "Mumbai, Maharashtra"
+    },
+    "hashtags": ["MumbaiWeather", "GoodVibes"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 345, "shares": 56, "comments": 23 },
+    "raw_payload": {
+      "account_created_at": "2021-11-20T00:00:00Z",
+      "follower_count": 8900,
+      "following_count": 1200,
+      "post_count": 3400
+    }
+  },
+  {
+    "post_id": "tw-20260720-019",
+    "platform": "twitter",
+    "author_id": "twuser_1010",
+    "author_handle": "@secular_warrior",
+    "text": "Ye log humari jagah le rahe hain. Inke saath koi compromise nahi hoga. Sabko milke inko sabak sikhana hoga. War mode ON! #TakeBack #NoCompromise",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T21:00:00Z",
+    "geo_location": {
+      "lat": 23.0225,
+      "lng": 72.5714,
+      "place_name": "Ahmedabad, Gujarat"
+    },
+    "hashtags": ["TakeBack", "NoCompromise"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 2100, "shares": 1800, "comments": 890 },
+    "raw_payload": {
+      "account_created_at": "2026-07-18T00:00:00Z",
+      "follower_count": 8,
+      "following_count": 1890,
+      "post_count": 456
+    }
+  },
+  {
+    "post_id": "ig-20260720-020",
+    "platform": "instagram",
+    "author_id": "iguser_2004",
+    "author_handle": "@chai_pe_charcha",
+    "text": "Chai aur samosa — best combo for monsoon. Koi aata hai Chai pe? Baarish mein mast lagta hai. #ChaiLovers #MonsoonVibes",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T16:00:00Z",
+    "geo_location": null,
+    "hashtags": ["ChaiLovers", "MonsoonVibes"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/chai_samosa.jpg"],
+    "engagement_counts": { "likes": 4500, "shares": 890, "comments": 234 },
+    "raw_payload": {
+      "account_created_at": "2020-01-01T00:00:00Z",
+      "follower_count": 23000,
+      "following_count": 890,
+      "post_count": 1200
+    }
+  },
+  {
+    "post_id": "tw-20260720-021",
+    "platform": "twitter",
+    "author_id": "twuser_1011",
+    "author_handle": "@india_factcheck",
+    "text": "Fact check: The viral image claiming Gujarat bridge collapse is from 2019 Indonesia. Please verify before sharing. #FactCheck #StopFakeNews",
+    "language_hint": "en",
+    "created_at": "2026-07-20T11:00:00Z",
+    "geo_location": null,
+    "hashtags": ["FactCheck", "StopFakeNews"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/factcheck_bridge.jpg"],
+    "engagement_counts": { "likes": 12000, "shares": 8900, "comments": 2300 },
+    "raw_payload": {
+      "account_created_at": "2018-03-01T00:00:00Z",
+      "follower_count": 120000,
+      "following_count": 450,
+      "post_count": 8900
+    }
+  },
+  {
+    "post_id": "fb-20260720-022",
+    "platform": "facebook",
+    "author_id": "fbuser_3005",
+    "author_handle": "Ahmedabad_Tech_Hub",
+    "text": "New tech startup incubator opens in GIFT City, Gandhinagar. Great news for the startup ecosystem in Gujarat! #StartupIndia #GIFTCity #TechGujarat",
+    "language_hint": "en",
+    "created_at": "2026-07-20T09:30:00Z",
+    "geo_location": {
+      "lat": 23.2156,
+      "lng": 72.6369,
+      "place_name": "Gandhinagar, Gujarat"
+    },
+    "hashtags": ["StartupIndia", "GIFTCity", "TechGujarat"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 890, "shares": 345, "comments": 67 },
+    "raw_payload": {
+      "account_created_at": "2019-07-15T00:00:00Z",
+      "follower_count": 23000,
+      "following_count": 780,
+      "post_count": 1200
+    }
+  },
+  {
+    "post_id": "tw-20260720-023",
+    "platform": "twitter",
+    "author_id": "twuser_1012",
+    "author_handle": "@hate_spewer_en",
+    "text": "These people are a cancer on our society. They should all be rounded up and dealt with. No mercy for traitors. Every patriot should take action NOW. #Cleansing",
+    "language_hint": "en",
+    "created_at": "2026-07-20T22:00:00Z",
+    "geo_location": null,
+    "hashtags": ["Cleansing"],
+    "mentions": ["@target_community_leader"],
+    "media_urls": [],
+    "engagement_counts": { "likes": 1200, "shares": 890, "comments": 456 },
+    "raw_payload": {
+      "account_created_at": "2026-07-19T00:00:00Z",
+      "follower_count": 5,
+      "following_count": 2300,
+      "post_count": 234
+    }
+  },
+  {
+    "post_id": "yt-20260720-024",
+    "platform": "youtube",
+    "author_id": "ytuser_4003",
+    "author_handle": "@global_news_india",
+    "text": "India's economy shows strong growth in Q2 2026. Manufacturing sector leads the way. Full analysis in the video. #IndianEconomy #Growth",
+    "language_hint": "en",
+    "created_at": "2026-07-20T13:00:00Z",
+    "geo_location": null,
+    "hashtags": ["IndianEconomy", "Growth"],
+    "mentions": [],
+    "media_urls": ["https://youtube.com/watch?v=example_eco1"],
+    "engagement_counts": { "likes": 5600, "shares": 1200, "comments": 345 },
+    "raw_payload": {
+      "account_created_at": "2014-02-01T00:00:00Z",
+      "follower_count": 230000,
+      "following_count": 120,
+      "post_count": 3400
+    }
+  },
+  {
+    "post_id": "tw-20260720-025",
+    "platform": "twitter",
+    "author_id": "twuser_1013",
+    "author_handle": "@climate_india",
+    "text": "Monsoon update: Heavy rainfall expected in Gujarat and Rajasthan over the next 48 hours. Stay safe everyone. #MonsoonAlert #WeatherUpdate",
+    "language_hint": "en",
+    "created_at": "2026-07-20T07:00:00Z",
+    "geo_location": null,
+    "hashtags": ["MonsoonAlert", "WeatherUpdate"],
+    "mentions": [],
+    "media_urls": [],
+    "engagement_counts": { "likes": 3400, "shares": 2100, "comments": 456 },
+    "raw_payload": {
+      "account_created_at": "2017-06-01T00:00:00Z",
+      "follower_count": 67000,
+      "following_count": 340,
+      "post_count": 5600
+    }
+  },
+  {
+    "post_id": "tw-20260720-026",
+    "platform": "twitter",
+    "author_id": "twuser_bot_01",
+    "author_handle": "@patriot_786x",
+    "text": "BREAKING: Vaccine mein chip daal ke sab ko track kar rahe hain! Ye sab plan hai global elites ka! Apne bacchon ko mat lagwao! SHARE KARO! #VaccineScam #WakeUpIndia",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T20:02:00Z",
+    "geo_location": null,
+    "hashtags": ["VaccineScam", "WakeUpIndia"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/fake_vaccine_chart.jpg"],
+    "engagement_counts": { "likes": 12, "shares": 890, "comments": 2 },
+    "raw_payload": {
+      "account_created_at": "2026-07-19T00:00:00Z",
+      "follower_count": 3,
+      "following_count": 2000,
+      "post_count": 780
+    }
+  },
+  {
+    "post_id": "tw-20260720-027",
+    "platform": "twitter",
+    "author_id": "twuser_bot_02",
+    "author_handle": "@truth_seeker_99z",
+    "text": "BREAKING: Vaccine mein chip daal ke sab ko track kar rahe hain! Ye sab plan hai global elites ka! Apne bacchon ko mat lagwao! SHARE karo! #VaccineScam #WakeUpIndia",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T20:03:00Z",
+    "geo_location": null,
+    "hashtags": ["VaccineScam", "WakeUpIndia"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/fake_vaccine_chart.jpg"],
+    "engagement_counts": { "likes": 8, "shares": 670, "comments": 1 },
+    "raw_payload": {
+      "account_created_at": "2026-07-18T00:00:00Z",
+      "follower_count": 7,
+      "following_count": 1900,
+      "post_count": 650
+    }
+  },
+  {
+    "post_id": "tw-20260720-028",
+    "platform": "twitter",
+    "author_id": "twuser_bot_03",
+    "author_handle": "@desh_ki_awaz_x",
+    "text": "BREAKING: Vaccine mein chip daal ke sab ko track kar rahe hain. Ye sab plan hai global elites ka! Apne bacchon ko mat lagwao! SHARE KARO JALDI! #VaccineScam #WakeUpIndia",
+    "language_hint": "mixed",
+    "created_at": "2026-07-20T20:05:00Z",
+    "geo_location": null,
+    "hashtags": ["VaccineScam", "WakeUpIndia"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/fake_vaccine_chart.jpg"],
+    "engagement_counts": { "likes": 5, "shares": 720, "comments": 0 },
+    "raw_payload": {
+      "account_created_at": "2026-07-17T00:00:00Z",
+      "follower_count": 11,
+      "following_count": 2100,
+      "post_count": 920
+    }
+  },
+  {
+    "post_id": "ig-20260720-029",
+    "platform": "instagram",
+    "author_id": "iguser_2005",
+    "author_handle": "@gujju_foodie",
+    "text": "Undhiyu aur jalebi — winter special Gujarat style! 🤤 Recipe video coming soon. #GujaratiFood #Undhiyu #FoodBlogger",
+    "language_hint": "en",
+    "created_at": "2026-07-20T12:30:00Z",
+    "geo_location": {
+      "lat": 23.0225,
+      "lng": 72.5714,
+      "place_name": "Ahmedabad, Gujarat"
+    },
+    "hashtags": ["GujaratiFood", "Undhiyu", "FoodBlogger"],
+    "mentions": [],
+    "media_urls": ["https://example.com/images/undhiyu.jpg"],
+    "engagement_counts": { "likes": 7800, "shares": 1200, "comments": 456 },
+    "raw_payload": {
+      "account_created_at": "2019-12-01T00:00:00Z",
+      "follower_count": 45000,
+      "following_count": 890,
+      "post_count": 890
+    }
+  },
+  {
+    "post_id": "tw-20260720-030",
+    "platform": "twitter",
+    "author_id": "twuser_1014",
+    "author_handle": "@surat_rage",
+    "text": "[PLACEHOLDER — IncitementToViolence: This slot reserved for a real labeled example from HASOC/TRAC-2 dataset. Replace with actual dataset sample containing explicit violent call-to-action in Gujarati during prepare_datasets.py integration.]",
+    "language_hint": "gu",
+    "created_at": "2026-07-20T23:00:00Z",
+    "geo_location": {
+      "lat": 21.1702,
+      "lng": 72.8311,
+      "place_name": "Surat, Gujarat"
+    },
+    "hashtags": ["SuratRage"],
+    "mentions": ["@local_official"],
+    "media_urls": [],
+    "engagement_counts": { "likes": 2300, "shares": 1800, "comments": 890 },
+    "raw_payload": {
+      "account_created_at": "2026-07-12T00:00:00Z",
+      "follower_count": 15,
+      "following_count": 1700,
+      "post_count": 340
+    }
+  }
+]
