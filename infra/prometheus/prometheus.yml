@@ -1,5 +1,5 @@
 # ============================================================
-# Prometheus configuration for NETRA (ps05-threat-analyzer)
+# Prometheus configuration for NETRA (netra)
 # Scrapes all application services for monitoring.
 # ============================================================
 

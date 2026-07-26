@@ -29,7 +29,7 @@ class Settings:
     database_url: str = field(
         default_factory=lambda: os.getenv(
             "DATABASE_URL",
-            "postgresql://ps05:ps05secret@localhost:5432/ps05_threat",
+            "postgresql://netra:netrasecret@localhost:5432/netra_threat",
         )
     )
 

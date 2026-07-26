@@ -1,29 +1,37 @@
 {
-  "name": "ps05-api-gateway",
+  "name": "netra-api-gateway",
   "version": "1.0.0",
-  "description": "API Gateway for PS05 Threat Analyzer",
+  "description": "API Gateway for NETRA",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn src/server.ts",
+    "dev": "node node_modules/ts-node-dev/lib/bin.js --respawn src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.12.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.3",
     "kafkajs": "^2.2.4",
     "node-fetch": "^2.7.0",
+    "pg": "^8.22.0",
     "socket.io": "^4.7.5",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.0.0",
     "@types/node-fetch": "^2.6.11",
+    "@types/pg": "^8.20.0",
     "@types/uuid": "^10.0.0",
+    "@types/web-push": "^3.6.4",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.0"
   }

@@ -123,15 +123,22 @@ def _load_models():
     _language_id = LanguageIdentifier(use_indiclid=False, use_fasttext=False)
 
     # Classifier
-    if config.active_model == "sarvam":
+    if config.active_model == "zeroshot":
+        from nlp_engine.models.zeroshot_classifier import ZeroShotClassifier
+        _classifier = ZeroShotClassifier()
+    elif config.active_model == "sarvam":
         from nlp_engine.models.sarvam_classifier import SarvamClassifier
         _classifier = SarvamClassifier(model_path=config.sarvam_model_path)
+    elif config.active_model == "muril":
+        from nlp_engine.models.muril_classifier import MuRILClassifier
+        _classifier = MuRILClassifier(model_path=config.muril_model_path)
     else:
         from nlp_engine.models.indicbert_classifier import IndicBERTClassifier
         _classifier = IndicBERTClassifier(model_path=config.indicbert_model_path)
 
     try:
-        _classifier.load()
+        if hasattr(_classifier, 'load'):
+            _classifier.load()
         logger.info(f"Classifier loaded: {config.active_model}")
     except Exception as e:
         logger.warning(f"Could not load classifier (will use mock predictions): {e}")
@@ -216,14 +223,29 @@ def classify_post(post: PostInput) -> tuple[ClassificationOutput, Optional[Alert
         detected_language = "en"
 
     # 2. Threat classification
+    classification_failed = False
+    
     if _classifier and _classifier.is_loaded:
-        cls_result = _classifier.predict(post.text)
-        threat_category = cls_result.threat_category
-        threat_confidence = cls_result.threat_confidence
+        if config.active_model == "zeroshot":
+            cls_result = _classifier.predict(post.text, language=detected_language, post_id=post.post_id)
+        else:
+            cls_result = _classifier.predict(post.text)
+            
+        if cls_result.threat_category is None:
+            # Classification entirely failed
+            classification_failed = True
+            threat_category = "ClassificationFailed"
+            threat_confidence = 0.0
+            model_version = getattr(cls_result, 'model_version', config.model_version)
+        else:
+            threat_category = cls_result.threat_category
+            threat_confidence = cls_result.threat_confidence
+            model_version = getattr(cls_result, 'model_version', config.model_version)
     else:
         # Mock prediction for dev/testing when model isn't loaded
         threat_category = "Neutral"
         threat_confidence = 0.5
+        model_version = config.model_version
         logger.debug(f"Using mock prediction for post {post.post_id}")
 
     # 3. Sentiment analysis
@@ -243,9 +265,15 @@ def classify_post(post: PostInput) -> tuple[ClassificationOutput, Optional[Alert
         sentiment=sentiment,
         sentiment_intensity=round(sentiment_intensity, 4),
         detected_language=detected_language,
-        model_version=config.model_version,
+        model_version=model_version,
         classified_at=now,
     )
+
+    # 5. Route failed classifications immediately to uncertainty sampler or return no alert
+    if classification_failed:
+        # Note: uncertainty routing usually happens via batch output in fixture or kafka consumer
+        # Here we just ensure we don't trigger an alert.
+        return classification, None
 
     # 5. Generate alert if threshold crossed
     alert = None

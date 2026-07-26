@@ -1,5 +1,5 @@
 // ============================================================
-// PS05 Threat Analyzer — Neo4j Schema Setup
+// NETRA — Neo4j Schema Setup
 // Run once to initialize constraints, indexes, and schema.
 // ============================================================
 

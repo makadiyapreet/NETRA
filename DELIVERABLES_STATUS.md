@@ -1,6 +1,6 @@
 # NETRA — DELIVERABLES STATUS
 
-**Project:** PS05 Threat Analyzer (ERH26_PS_05)  
+**Project:** NETRA (ERH26_PS_05)  
 **Date:** 2024-07-24  
 **PS Domain:** Cyber Threat Intelligence / OSINT  
 
@@ -44,11 +44,14 @@
 
 | Deliverable | Status | File(s) |
 |-------------|--------|---------|
-| IndicBERT/MuRIL classifier (4-class) | ✅ | `nlp_engine/models/indicbert_classifier.py` |
-| mBERT classifier (PS baseline) | ✅ | `nlp_engine/models/mbert_classifier.py` |
-| Sarvam classifier (prompt-based) | ✅ | `nlp_engine/models/sarvam_classifier.py` |
+| **Zero-Shot Classifier (Active)** | ✅ | `nlp_engine/models/zeroshot_classifier.py` |
+| IndicBERT classifier (4-class) | 🔶 | `nlp_engine/models/indicbert_classifier.py` (Pending GPU training) |
+| MuRIL classifier (4-class, 17 Indian langs) | 🔶 | `nlp_engine/models/muril_classifier.py` (Pending GPU training) |
+| mBERT classifier (PS baseline) | 🔶 | `nlp_engine/models/mbert_classifier.py` (Pending GPU training) |
+| Sarvam classifier (prompt-based) | 🔶 | `nlp_engine/models/sarvam_classifier.py` (Pending GPU training) |
 | Sentiment model | ✅ | `nlp_engine/models/sentiment_model.py` |
 | IndicBERT training script | ✅ | `nlp_engine/models/train_indicbert.py` |
+| MuRIL training script | ✅ | `nlp_engine/models/train_muril.py` |
 | Sarvam LoRA training script | ✅ | `nlp_engine/models/train_sarvam.py` |
 | Evaluation + benchmark table | ✅ | `nlp_engine/models/evaluate.py` |
 | Dataset preparation (unified CSV) | ✅ | `nlp_engine/datasets/prepare_datasets.py` |
@@ -95,9 +98,17 @@
 | Trends route | ✅ | `api-gateway/src/routes/trends.ts` |
 | RBAC middleware (Analyst / Admin) | ✅ | `api-gateway/src/auth/rbac.ts` |
 | Audit logger | ✅ | `api-gateway/src/middleware/audit-logger.ts` |
-| React dashboard (6 pages) | ✅ | `dashboard/src/pages/*.tsx` |
+| React dashboard (8 pages) | ✅ | `dashboard/src/pages/*.tsx` |
+| Search Results page | ✅ | `dashboard/src/pages/SearchResults.tsx` |
+| Watchlist Manager page (Admin-only) | ✅ | `dashboard/src/pages/WatchlistManager.tsx` |
+| Dark/Light theme toggle | ✅ | `dashboard/src/ThemeContext.tsx`, `dashboard/src/styles/index.css` |
+| SearchBar component | ✅ | embedded in `dashboard/src/components/Sidebar.tsx` |
+| Data Mode Badge (live/fixture) | ✅ | embedded in `dashboard/src/components/Sidebar.tsx` |
 | Reusable components | ✅ | `dashboard/src/components/*.tsx` |
 | Socket.IO live alerts | ✅ | `dashboard/src/` (integrated in pages) |
+| Global search route | ✅ | `api-gateway/src/routes/search.ts` |
+| Watchlist proxy route | ✅ | `api-gateway/src/routes/watchlist.ts` |
+| Watchlist REST API (ingestion) | ✅ | `ingestion/api/watchlist_api.py` |
 
 ---
 
@@ -163,17 +174,36 @@
 
 | Category | Total | Done | Pending |
 |----------|-------|------|---------|
-| Ingestion | 17 | 17 | 0 |
-| NLP Engine | 17 | 14 | 3 (need trained model) |
+| Ingestion | 18 | 18 | 0 |
+| NLP Engine | 20 | 17 | 3 (need trained model) |
 | Network Analysis | 8 | 8 | 0 |
-| Dashboard & API | 16 | 16 | 0 |
-| Reporting | 2 | 2 | 0 |
-| Infrastructure | 7 | 7 | 0 |
-| Schemas | 4 | 4 | 0 |
-| Documentation | 7 | 7 | 0 |
-| Testing | 3 | 3 | 0 |
-| **TOTAL** | **81** | **78** | **3** |
+| Dashboard & API | 25 | 25 | 0 |
+---
 
-The 3 pending items all require a fine-tuned model checkpoint trained on labeled data, 
-which is expected to be done during the model training phase. All evaluation tooling is 
-in place and ready to measure these metrics.
+## 21-Objective Tier Upgrade Pass (July 2026)
+
+| Tier | Objective | Status | Implementation File(s) |
+|------|-----------|--------|------------------------|
+| **Tier 1** | 1. Add Kibana service | ✅ | `docker-compose.yml`, `infra/kibana/export.ndjson` |
+| **Tier 1** | 2. Video support (Shorts/Reels) | ✅ | `bonus_multimodal/video_frame_analysis.py`, `inference_service.py` |
+| **Tier 1** | 3. Scrapy vs Playwright dual strategy | ✅ | `ingestion/connectors/scrapy_spider.py`, `scraper.py` |
+| **Tier 1** | 4. Real Login & JWT Authentication | ✅ | `ingestion/watchlist/users_schema.sql`, `jwt-auth.ts`, `Login.tsx` |
+| **Tier 2** | 5. GPU Model Training Runbook | ⚠️ BLOCKED | `RUNBOOK_FOR_GPU_TRAINING.md` (no GPU available; step-by-step Colab runbook provided) |
+| **Tier 2** | 6. Explainable AI ("Why was this flagged?") | ✅ | `nlp_engine/inference/explainer.py`, `threat_classification_schema.json` |
+| **Tier 2** | 7. Confusion Matrix Visualization | ✅ | `nlp_engine/models/evaluate.py`, `dashboard/src/pages/ModelPerformance.tsx` |
+| **Tier 2** | 8. Rate-Limit & Circuit Breaker Dashboard | ✅ | `infra/grafana/provisioning/dashboards/rate-limits.json` |
+| **Tier 3** | 9. GenAI Daily Incident Briefing | ✅ | `ingestion/scheduler/daily_briefing.py`, `api-gateway/src/routes/briefing.ts` |
+| **Tier 3** | 10. Historical Case-Linking (FAISS) | ✅ | `nlp_engine/inference/vector_store.py` |
+| **Tier 3** | 11. Deepfake Image Detection | ✅ | `bonus_multimodal/deepfake_detector.py` |
+| **Tier 3** | 12. Multi-Language Expansion (mr, bn, pa) | ✅ | `language_id.py`, `threat_classification_schema.json` |
+| **Tier 3** | 13. Public Telegram Channel Monitoring | ✅ | `ingestion/connectors/telegram.py` |
+| **Tier 3** | 14. Mobile Push Notifications | ✅ | `api-gateway/src/routes/notifications.ts` |
+| **Tier 3** | 15. Multi-Tenant Jurisdiction Filtering | ✅ | `ingestion/watchlist/watchlist_schema.sql`, `FilterBar.tsx` |
+| **Tier 3** | 16. A/B Testing for Classifiers | ✅ | `nlp_engine/inference/ab_router.py` |
+| **Tier 3** | 17. Hash-Chain Evidence Audit Trail | ✅ | `reporting/evidence_chain.py` |
+| **Tier 3** | 18. I4C National Portal Integration Stub | ✅ | `ingestion/connectors/i4c_integration_stub.py` |
+| **Tier 4** | 19. Guided Walkthrough Tour | ✅ | `dashboard/src/components/GuidedTour.tsx` |
+| **Tier 4** | 20. Consolidated System Health Page | ✅ | `dashboard/src/pages/SystemHealth.tsx`, `routes/health-metrics.ts` |
+| **Feature**| 21. Cascading Geo Filter (Country→State→City)| ✅ | `post_schema.json`, `routes/geo.ts`, `FilterBar.tsx` |
+| **Feature**| 22. API Quota Mock Fallback Generator | ✅ | `api-gateway/src/routes/live-fetch.ts` |
+| **Feature**| 23. Live Data UI Auto-Refresh Timer | ✅ | `dashboard/src/pages/Dashboard.tsx`, `GeoMapView.tsx` |

@@ -1,6 +1,6 @@
 # NETRA — KPI REPORT
 
-**Project:** PS05 Threat Analyzer (ERH26_PS_05)  
+**Project:** NETRA (ERH26_PS_05)  
 **Date:** 2024-07-24  
 **Domain:** Cyber Threat Intelligence / OSINT  
 

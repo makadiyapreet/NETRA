@@ -47,14 +47,32 @@ class WatchlistManager:
     High-level watchlist management interface.
 
     Wraps the CRUD functions with a session-managed API.
+    Falls back gracefully to in-memory store if session is None or unavailable.
     """
 
-    def __init__(self, session: Session):
+    _mock_keywords = [
+        {"id": 1, "keyword": "danga", "platform_filter": None, "geo_area": "Surat", "is_active": True},
+        {"id": 2, "keyword": "protest", "platform_filter": None, "geo_area": "Ahmedabad", "is_active": True},
+    ]
+    _mock_hashtags = [
+        {"id": 1, "hashtag": "#GujaratRiots", "platform_filter": None, "geo_area": "Gujarat", "is_active": True},
+        {"id": 2, "hashtag": "#Strike2026", "platform_filter": None, "geo_area": "Ahmedabad", "is_active": True},
+    ]
+    _mock_geo_boxes = [
+        {"id": 1, "name": "Surat Sensitive Zone", "lat_min": 21.1, "lat_max": 21.3, "lng_min": 72.7, "lng_max": 72.9, "is_active": True},
+    ]
+    _mock_profiles = [
+        {"id": 1, "platform": "twitter", "profile_id": "1001", "handle": "@threat_account_1", "is_active": True},
+    ]
+
+    def __init__(self, session: Optional[Session] = None):
         self._session = session
 
     @property
     def active(self) -> ActiveWatchlist:
         """Get a snapshot of all active watchlist entries."""
+        if not self._session:
+            return ActiveWatchlist()
         return get_active_watchlist(self._session)
 
     # ── Keywords ──────────────────────────────────────────────────────────
@@ -66,16 +84,25 @@ class WatchlistManager:
         geo_area: Optional[str] = None,
     ) -> int:
         """Add a keyword to the watchlist. Returns the entry ID."""
+        if not self._session:
+            new_id = len(self._mock_keywords) + 1
+            self._mock_keywords.append({"id": new_id, "keyword": keyword, "platform_filter": platform_filter, "geo_area": geo_area or "Gujarat", "is_active": True})
+            return new_id
         entry = add_keyword(self._session, keyword, platform_filter, geo_area)
         logger.info(f"Added keyword: '{keyword}' (id={entry.id})")
         return entry.id
 
     def remove_keyword(self, keyword_id: int) -> bool:
         """Soft-delete a keyword."""
+        if not self._session:
+            self._mock_keywords = [k for k in self._mock_keywords if k["id"] != keyword_id]
+            return True
         return remove_keyword(self._session, keyword_id)
 
     def list_keywords(self, active_only: bool = True):
         """List all keywords."""
+        if not self._session:
+            return self._mock_keywords
         return list_keywords(self._session, active_only)
 
     # ── Hashtags ──────────────────────────────────────────────────────────
@@ -87,14 +114,23 @@ class WatchlistManager:
         geo_area: Optional[str] = None,
     ) -> int:
         """Add a hashtag. Returns the entry ID."""
+        if not self._session:
+            new_id = len(self._mock_hashtags) + 1
+            self._mock_hashtags.append({"id": new_id, "hashtag": hashtag, "platform_filter": platform_filter, "geo_area": geo_area or "Gujarat", "is_active": True})
+            return new_id
         entry = add_hashtag(self._session, hashtag, platform_filter, geo_area)
         logger.info(f"Added hashtag: '{hashtag}' (id={entry.id})")
         return entry.id
 
     def remove_hashtag(self, hashtag_id: int) -> bool:
+        if not self._session:
+            self._mock_hashtags = [h for h in self._mock_hashtags if h["id"] != hashtag_id]
+            return True
         return remove_hashtag(self._session, hashtag_id)
 
     def list_hashtags(self, active_only: bool = True):
+        if not self._session:
+            return self._mock_hashtags
         return list_hashtags(self._session, active_only)
 
     # ── Geo Boxes ─────────────────────────────────────────────────────────
@@ -107,6 +143,10 @@ class WatchlistManager:
         lng_min: float,
         lng_max: float,
     ) -> int:
+        if not self._session:
+            new_id = len(self._mock_geo_boxes) + 1
+            self._mock_geo_boxes.append({"id": new_id, "name": name, "lat_min": lat_min, "lat_max": lat_max, "lng_min": lng_min, "lng_max": lng_max, "is_active": True})
+            return new_id
         entry = add_geo_box(
             self._session, name, lat_min, lat_max, lng_min, lng_max
         )
@@ -114,33 +154,45 @@ class WatchlistManager:
         return entry.id
 
     def remove_geo_box(self, geo_box_id: int) -> bool:
+        if not self._session:
+            self._mock_geo_boxes = [g for g in self._mock_geo_boxes if g["id"] != geo_box_id]
+            return True
         return remove_geo_box(self._session, geo_box_id)
 
     def list_geo_boxes(self, active_only: bool = True):
+        if not self._session:
+            return self._mock_geo_boxes
         return list_geo_boxes(self._session, active_only)
 
     # ── Profiles ──────────────────────────────────────────────────────────
 
     def add_profile(self, platform: str, profile_id: str, handle: str) -> int:
+        if not self._session:
+            new_id = len(self._mock_profiles) + 1
+            self._mock_profiles.append({"id": new_id, "platform": platform, "profile_id": profile_id, "handle": handle, "is_active": True})
+            return new_id
         entry = add_profile(self._session, platform, profile_id, handle)
         logger.info(f"Added profile: {platform}/{handle} (id={entry.id})")
         return entry.id
 
     def remove_profile(self, profile_db_id: int) -> bool:
+        if not self._session:
+            self._mock_profiles = [p for p in self._mock_profiles if p["id"] != profile_db_id]
+            return True
         return remove_profile(self._session, profile_db_id)
 
     def list_profiles(self, active_only: bool = True):
+        if not self._session:
+            return self._mock_profiles
         return list_profiles(self._session, active_only)
 
     # ── Summary ───────────────────────────────────────────────────────────
 
     def summary(self) -> dict:
         """Return a human-readable summary of the watchlist."""
-        wl = self.active
         return {
-            "keywords": len(wl.keywords),
-            "hashtags": len(wl.hashtags),
-            "geo_boxes": len(wl.geo_boxes),
-            "profiles": len(wl.profiles),
-            "geo_areas": wl.geo_areas,
+            "keywords": len(self.list_keywords()),
+            "hashtags": len(self.list_hashtags()),
+            "geo_boxes": len(self.list_geo_boxes()),
+            "profiles": len(self.list_profiles()),
         }

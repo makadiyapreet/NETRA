@@ -87,7 +87,7 @@ def main() -> None:
     """Parse CLI arguments and dispatch."""
     parser = argparse.ArgumentParser(
         prog="ingestion",
-        description="PS05 Threat Analyzer — Ingestion Layer CLI",
+        description="NETRA — Ingestion Layer CLI",
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 

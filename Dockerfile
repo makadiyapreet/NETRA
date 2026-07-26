@@ -1,5 +1,5 @@
 ###############################################################################
-# PS05 Threat Analyzer — Ingestion Layer Dockerfile
+# NETRA — Ingestion Layer Dockerfile
 ###############################################################################
 
 FROM python:3.12-slim AS base

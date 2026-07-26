@@ -41,4 +41,28 @@ router.post(
   }
 );
 
+/**
+ * POST /api/alerts/:id/unacknowledge
+ * Admin-only. Un-acknowledges an alert.
+ */
+router.post(
+  '/:id/unacknowledge',
+  requireRole('Admin'),
+  auditLogger('unacknowledge_alert'),
+  (req: Request, res: Response) => {
+    const dataStore = req.app.locals.dataStore;
+    const io = req.app.locals.io;
+    const alert = dataStore.unacknowledgeAlert(req.params.id);
+
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+
+    // Broadcast un-acknowledgement
+    io.emit('alert-unacknowledged', { alert_id: alert.alert_id });
+
+    res.json({ success: true, alert });
+  }
+);
+
 export default router;

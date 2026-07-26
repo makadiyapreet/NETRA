@@ -46,7 +46,7 @@ class KafkaProducerWrapper:
                 "linger.ms": 10,
                 "batch.size": 16384,
                 "compression.type": "snappy",
-                "client.id": "ps05-ingestion",
+                "client.id": "netra-ingestion",
             }
         )
         logger.info(

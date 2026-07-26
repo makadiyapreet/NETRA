@@ -84,12 +84,13 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: ps05_threat
-      POSTGRES_USER: ps05
-      POSTGRES_PASSWORD: ps05secret
+      POSTGRES_DB: netra_threat
+      POSTGRES_USER: netra
+      POSTGRES_PASSWORD: netrasecret
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./ingestion/watchlist/watchlist_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./ingestion/watchlist/users_schema.sql:/docker-entrypoint-initdb.d/02_users.sql:ro
     restart: unless-stopped
 
   # ── Neo4j ─────────────────────────────────────────────────
@@ -209,6 +210,30 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
+
+  # ── Kibana (PS-required: "Elasticsearch + Kibana") ─────────
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: netra-kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+      ELASTICSEARCH_USERNAME: ""
+      ELASTICSEARCH_PASSWORD: ""
+      XPACK_SECURITY_ENABLED: "false"
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: "netra-kibana-encryption-key-min32chars!"
+      TELEMETRY_ENABLED: "false"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'available'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
 
 volumes:
   zookeeper_data:

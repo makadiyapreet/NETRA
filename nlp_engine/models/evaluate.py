@@ -89,27 +89,43 @@ def evaluate(
     logger.info(f"Evaluating on {len(test_df)} samples")
 
     # Load model
-    if model_type in ("indicbert", "muril", "mbert"):
+    if model_type == "indicbert":
         from nlp_engine.models.indicbert_classifier import IndicBERTClassifier
 
-        # Map model type to default HuggingFace model name
-        _default_model_paths = {
-            "indicbert": "ai4bharat/indic-bert",
-            "muril": "google/muril-base-cased",
-            "mbert": "bert-base-multilingual-cased",
-        }
-        # Use checkpoint path if it looks like a local path, otherwise use default
         effective_path = model_path
         if model_path.startswith("checkpoints/") and not Path(model_path).exists():
-            effective_path = _default_model_paths.get(model_type, model_path)
+            effective_path = "ai4bharat/indic-bert"
             logger.info(
                 f"Checkpoint not found at {model_path}, using base model: {effective_path}"
             )
-
         classifier = IndicBERTClassifier(model_path=effective_path)
+
+    elif model_type == "muril":
+        from nlp_engine.models.muril_classifier import MuRILClassifier
+
+        effective_path = model_path
+        if model_path.startswith("checkpoints/") and not Path(model_path).exists():
+            effective_path = "google/muril-base-cased"
+            logger.info(
+                f"Checkpoint not found at {model_path}, using base model: {effective_path}"
+            )
+        classifier = MuRILClassifier(model_path=effective_path)
+
+    elif model_type == "mbert":
+        from nlp_engine.models.mbert_classifier import MBERTClassifier
+
+        effective_path = model_path
+        if model_path.startswith("checkpoints/") and not Path(model_path).exists():
+            effective_path = "bert-base-multilingual-cased"
+            logger.info(
+                f"Checkpoint not found at {model_path}, using base model: {effective_path}"
+            )
+        classifier = MBERTClassifier(model_path=effective_path)
+
     elif model_type == "sarvam":
         from nlp_engine.models.sarvam_classifier import SarvamClassifier
         classifier = SarvamClassifier(model_path=model_path)
+
     else:
         raise ValueError(
             f"Unknown model type: {model_type}. "

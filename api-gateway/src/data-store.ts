@@ -16,6 +16,7 @@ interface Post {
     confidence: number;
     keywords: string[];
   };
+  post_url?: string;
 }
 
 interface Alert {
@@ -52,7 +53,11 @@ export class DataStore {
   private trendSpikes: TrendSpike[] = [];
 
   private constructor() {
-    this.loadFixtureData();
+    if (process.env.MODE === 'fixture') {
+      this.loadFixtureData();
+    } else {
+      console.log('📦 Real mode active: Starting with an empty data store');
+    }
   }
 
   static getInstance(): DataStore {
@@ -70,7 +75,7 @@ export class DataStore {
       this.posts = data.posts;
       this.alerts = data.alerts;
       this.trendSpikes = data.trend_spikes;
-      console.log(`📦 Loaded ${this.posts.length} posts, ${this.alerts.length} alerts, ${this.trendSpikes.length} trend spikes`);
+      console.log(`📦 Loaded ${this.posts.length} posts, ${this.alerts.length} alerts, ${this.trendSpikes.length} trend spikes from NETRA dataset`);
     } catch (err) {
       console.error('❌ Failed to load fixture data:', err);
     }
@@ -79,6 +84,7 @@ export class DataStore {
   // ── Posts ───────────────────────────────────────────────────────────
   getPosts(filters: {
     language?: string;
+    platform?: string;
     geo_location?: string;
     keyword?: string;
     threat_category?: string;
@@ -89,6 +95,9 @@ export class DataStore {
 
     if (filters.language) {
       results = results.filter(p => p.detected_language === filters.language);
+    }
+    if (filters.platform) {
+      results = results.filter(p => p.platform.toLowerCase() === filters.platform!.toLowerCase());
     }
     if (filters.geo_location) {
       results = results.filter(p =>
@@ -123,6 +132,42 @@ export class DataStore {
     return this.posts.filter(p => ids.includes(p.post_id));
   }
 
+  // Add new posts to the store (used by live data fetcher)
+  addPosts(newPosts: any[]): void {
+    const existingIds = new Set(this.posts.map(p => p.post_id));
+    for (const post of newPosts) {
+      if (!existingIds.has(post.post_id)) {
+        this.posts.unshift(post); // Add to beginning (newest first)
+        existingIds.add(post.post_id);
+      }
+    }
+    console.log(`📥 Data store now has ${this.posts.length} total posts`);
+  }
+
+  // Add new alerts to the store (used by live data fetcher)
+  addAlerts(newAlerts: Alert[]): void {
+    const existingIds = new Set(this.alerts.map(a => a.alert_id));
+    for (const alert of newAlerts) {
+      if (!existingIds.has(alert.alert_id)) {
+        this.alerts.unshift(alert); // newest first
+        existingIds.add(alert.alert_id);
+      }
+    }
+    console.log(`📥 Data store now has ${this.alerts.length} total alerts`);
+  }
+
+  // Add new trend spikes to the store
+  addTrendSpikes(newSpikes: TrendSpike[]): void {
+    const existingIds = new Set(this.trendSpikes.map(ts => ts.spike_id));
+    for (const spike of newSpikes) {
+      if (!existingIds.has(spike.spike_id)) {
+        this.trendSpikes.unshift(spike);
+        existingIds.add(spike.spike_id);
+      }
+    }
+    console.log(`📥 Data store now has ${this.trendSpikes.length} total trend spikes`);
+  }
+
   // ── Alerts ─────────────────────────────────────────────────────────
   getAlerts(severity?: number): Alert[] {
     let results = [...this.alerts];
@@ -138,6 +183,16 @@ export class DataStore {
       alert.acknowledged = true;
       alert.acknowledged_by = user;
       alert.acknowledged_at = new Date().toISOString();
+    }
+    return alert || null;
+  }
+
+  unacknowledgeAlert(alertId: string): Alert | null {
+    const alert = this.alerts.find(a => a.alert_id === alertId);
+    if (alert) {
+      alert.acknowledged = false;
+      alert.acknowledged_by = undefined;
+      alert.acknowledged_at = undefined;
     }
     return alert || null;
   }

@@ -12,6 +12,9 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
   const [loading, setLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [liveCount, setLiveCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'unack' | 'ack'>('unack');
+  const [filters, setFilters] = useState({ severity: '', category: '', platform: '' });
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
 
@@ -51,12 +54,30 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
       );
     });
 
+    socket.on('alert-unacknowledged', ({ alert_id }: any) => {
+      setAlerts((prev) =>
+        prev.map((a) =>
+          a.alert_id === alert_id
+            ? { ...a, acknowledged: false, acknowledged_by: undefined, acknowledged_at: undefined }
+            : a
+        )
+      );
+    });
+
     return () => {
       socket.disconnect();
     };
   }, []);
 
-  async function fetchAlerts() {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAlerts(true);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  async function fetchAlerts(silent = false) {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/alerts');
       const data = await res.json();
@@ -92,6 +113,30 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
     }
   }
 
+  async function handleUnacknowledge(alertId: string) {
+    try {
+      const res = await fetch(`/api/alerts/${alertId}/unacknowledge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': role,
+          'X-User-Name': 'demo_admin',
+        },
+      });
+      if (res.ok) {
+        setAlerts((prev) =>
+          prev.map((a) =>
+            a.alert_id === alertId
+              ? { ...a, acknowledged: false, acknowledged_by: undefined, acknowledged_at: undefined }
+              : a
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to unacknowledge alert:', err);
+    }
+  }
+
   function playAlertSound() {
     try {
       const ctx = new AudioContext();
@@ -107,6 +152,13 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
       osc.stop(ctx.currentTime + 0.5);
     } catch {}
   }
+
+  const filteredAlerts = alerts
+    .filter((a) => (activeTab === 'unack' ? !a.acknowledged : a.acknowledged))
+    .filter((a) => !filters.severity || a.severity >= parseInt(filters.severity))
+    .filter((a) => !filters.category || a.type === filters.category)
+    .filter((a) => !filters.platform || (a.platform && a.platform.toLowerCase() === filters.platform.toLowerCase()))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const unacknowledged = alerts.filter((a) => !a.acknowledged).length;
 
@@ -131,22 +183,65 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
         </button>
       </div>
 
-      <div ref={scrollRef} style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+      {/* Filter and Tab Bar */}
+      <div className="glass-card" style={{ padding: '12px 18px', marginBottom: 20, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-tertiary)', padding: 4, borderRadius: 8 }}>
+          <button 
+            className={`btn btn-sm ${activeTab === 'unack' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setActiveTab('unack')}
+          >
+            Unacknowledged
+          </button>
+          <button 
+            className={`btn btn-sm ${activeTab === 'ack' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setActiveTab('ack')}
+          >
+            Acknowledged
+          </button>
+        </div>
+
+        <div style={{ width: 1, height: 24, background: 'var(--border-color)' }} />
+
+        <select className="filter-select" style={{ minWidth: 140 }} value={filters.severity} onChange={e => setFilters(f => ({ ...f, severity: e.target.value }))}>
+          <option value="">All Severities</option>
+          <option value="5">Severity 5</option>
+          <option value="4">Severity 4+</option>
+          <option value="3">Severity 3+</option>
+        </select>
+
+        <select className="filter-select" style={{ minWidth: 140 }} value={filters.category} onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}>
+          <option value="">All Categories</option>
+          <option value="IncitementToViolence">Incitement To Violence</option>
+          <option value="Inflammatory">Inflammatory</option>
+          <option value="FakeNews">Fake News</option>
+        </select>
+
+        <select className="filter-select" style={{ minWidth: 140 }} value={filters.platform} onChange={e => setFilters(f => ({ ...f, platform: e.target.value }))}>
+          <option value="">All Platforms</option>
+          <option value="Twitter">Twitter / X</option>
+          <option value="YouTube">YouTube</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Facebook">Facebook</option>
+        </select>
+      </div>
+
+      <div ref={scrollRef} style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
             <div className="animate-pulse">Loading alerts...</div>
           </div>
-        ) : alerts.length === 0 ? (
+        ) : filteredAlerts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-            No alerts yet.
+            No {activeTab === 'unack' ? 'unacknowledged' : 'acknowledged'} alerts match your filters.
           </div>
         ) : (
-          alerts.map((alert) => (
+          filteredAlerts.map((alert) => (
             <AlertCard
               key={alert.alert_id}
               alert={alert}
               role={role}
               onAcknowledge={handleAcknowledge}
+              onUnacknowledge={handleUnacknowledge}
             />
           ))
         )}

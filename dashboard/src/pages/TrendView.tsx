@@ -19,12 +19,18 @@ export default function TrendView() {
   const [trends, setTrends] = useState<TrendSpike[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrend, setSelectedTrend] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchTrends();
+    const interval = setInterval(() => {
+      fetchTrends(true);
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  async function fetchTrends() {
+  async function fetchTrends(silent = false) {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/trends');
       const data = await res.json();
@@ -33,9 +39,11 @@ export default function TrendView() {
     } catch (err) {
       console.error('Failed to fetch trends:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
+
+  const filteredTrends = trends.filter(t => t.keyword.toLowerCase().includes(searchQuery.toLowerCase()));
 
   function formatTime(ts: string) {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -48,13 +56,13 @@ export default function TrendView() {
     return { label: 'LOW', color: '#22c55e' };
   }
 
-  const selected = trends.find((t) => t.spike_id === selectedTrend);
+  const selected = filteredTrends.find((t) => t.spike_id === selectedTrend) || (filteredTrends.length > 0 ? filteredTrends[0] : undefined);
 
   // Multi-line overview chart data
-  const allTimestamps = [...new Set(trends.flatMap((t) => t.frequency_timeseries.map((p) => p.timestamp)))].sort();
+  const allTimestamps = [...new Set(filteredTrends.flatMap((t) => t.frequency_timeseries.map((p) => p.timestamp)))].sort();
   const overviewData = allTimestamps.map((ts) => {
     const point: any = { time: formatTime(ts) };
-    trends.forEach((t) => {
+    filteredTrends.forEach((t) => {
       const match = t.frequency_timeseries.find((p) => p.timestamp === ts);
       point[t.keyword] = match?.count || 0;
     });
@@ -83,14 +91,24 @@ export default function TrendView() {
             Trend Monitor
           </h2>
           <p className="page-subtitle">
-            {trends.length} active spikes detected · Real-time keyword tracking
+            {filteredTrends.length} active spikes detected · Real-time keyword tracking
           </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <input 
+            type="text" 
+            placeholder="Search trend keywords..." 
+            className="filter-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: 250 }}
+          />
         </div>
       </div>
 
       {/* Spike summary cards */}
       <div className="stats-row" style={{ marginBottom: 24 }}>
-        {trends.map((t, i) => {
+        {filteredTrends.map((t, i) => {
           const sev = getSeverityLabel(t.z_score);
           const peak = Math.max(...t.frequency_timeseries.map((p) => p.count));
           return (
@@ -135,7 +153,7 @@ export default function TrendView() {
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={overviewData}>
                 <defs>
-                  {trends.map((t, i) => (
+                  {filteredTrends.map((t, i) => (
                     <linearGradient key={t.spike_id} id={`grad-${t.spike_id}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={ACCENT_COLORS[i % ACCENT_COLORS.length]} stopOpacity={0.3} />
                       <stop offset="95%" stopColor={ACCENT_COLORS[i % ACCENT_COLORS.length]} stopOpacity={0} />
@@ -150,7 +168,7 @@ export default function TrendView() {
                   itemStyle={{ color: '#e8eaf0' }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, color: '#8b8fa3' }} />
-                {trends.map((t, i) => (
+                {filteredTrends.map((t, i) => (
                   <Area
                     key={t.spike_id}
                     type="monotone"

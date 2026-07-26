@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import FilterBar from '../components/FilterBar';
 import PostCard from '../components/PostCard';
-import { ShieldAlert, FileWarning, Flame, Shield } from 'lucide-react';
+import { ShieldAlert, FileWarning, Flame, Shield, Radio, Loader2, ExternalLink, Video } from 'lucide-react';
 
 interface DashboardProps {
   role: 'Analyst' | 'Admin';
@@ -18,20 +18,42 @@ export default function Dashboard({ role }: DashboardProps) {
     geo_location: '',
     keyword: '',
     threat_category: '',
+    platform: '',
   });
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(10);
+
+  // Live fetch state
+  const [liveQuery, setLiveQuery] = useState('');
+  const [liveFetching, setLiveFetching] = useState(false);
+  const [liveResult, setLiveResult] = useState<{ total: number; errors: string[] } | null>(null);
+  const [apiStatus, setApiStatus] = useState<any>(null);
 
   useEffect(() => {
     fetchPosts();
+    fetchApiStatus();
+
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(() => {
+      fetchPosts(true); // silent fetch to avoid loading flash
+      setCountdown(10);
+    }, 10000);
+    
+    const tick = setInterval(() => {
+      setCountdown(prev => (prev > 0 ? prev - 1 : 10));
+    }, 1000);
+
+    return () => { clearInterval(interval); clearInterval(tick); };
   }, [page, filters]);
 
-  async function fetchPosts() {
-    setLoading(true);
+  async function fetchPosts(silent = false) {
+    if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams();
       params.set('page', String(page));
-      params.set('size', '10');
+      params.set('size', '100'); // 100 most recent posts
       if (filters.language) params.set('language', filters.language);
+      if (filters.platform) params.set('platform', filters.platform);
       if (filters.geo_location) params.set('geo_location', filters.geo_location);
       if (filters.keyword) params.set('keyword', filters.keyword);
       if (filters.threat_category) params.set('threat_category', filters.threat_category);
@@ -47,32 +69,143 @@ export default function Dashboard({ role }: DashboardProps) {
     }
   }
 
+  async function fetchApiStatus() {
+    try {
+      const res = await fetch(`${API}/live/status`);
+      const data = await res.json();
+      setApiStatus(data);
+    } catch {
+      // Live fetch not available
+    }
+  }
+
+  async function handleLiveFetch() {
+    if (!liveQuery.trim()) return;
+    setLiveFetching(true);
+    setLiveResult(null);
+    try {
+      const res = await fetch(`${API}/live/fetch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: liveQuery.trim() }),
+      });
+      const data = await res.json();
+      setLiveResult({ total: data.total, errors: data.errors || [] });
+      // Refresh posts to include newly fetched data
+      if (data.total > 0) {
+        setTimeout(() => fetchPosts(), 500);
+      }
+    } catch (err) {
+      setLiveResult({ total: 0, errors: ['Failed to connect to live fetch API'] });
+    } finally {
+      setLiveFetching(false);
+    }
+  }
+
   function handleFilterChange(key: string, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
   }
 
   function clearFilters() {
-    setFilters({ language: '', geo_location: '', keyword: '', threat_category: '' });
+    setFilters({ language: '', geo_location: '', keyword: '', threat_category: '', platform: '' });
     setPage(1);
   }
 
   // Stats from current data
   const threatCounts = posts.reduce((acc: Record<string, number>, p) => {
-    const cat = p.classification.threat_category;
-    acc[cat] = (acc[cat] || 0) + 1;
+    const cat = p.classification?.threat_category;
+    if (cat) acc[cat] = (acc[cat] || 0) + 1;
     return acc;
   }, {});
 
-  const totalPages = Math.ceil(total / 10);
+  const totalPages = Math.ceil(total / 100);
 
   return (
     <div className="animate-fade">
-      <div className="page-header">
+      <div className="page-header" style={{ flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h2 className="page-title">Threat Intelligence Feed</h2>
-          <p className="page-subtitle">{total} posts detected · Page {page} of {totalPages || 1}</p>
+          <h2 className="page-title">Live Data Feed</h2>
+          <p className="page-subtitle" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            Real-time multi-platform OSINT aggregation
+            <span style={{ fontSize: 12, opacity: 0.7, background: 'rgba(0,212,255,0.1)', padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(0,212,255,0.3)' }}>
+              Next refresh in {countdown}s
+            </span>
+          </p>
         </div>
+      </div>
+
+      {/* Live Fetch Panel */}
+      <div className="glass-card" style={{ padding: '14px 18px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <Radio size={16} style={{ color: '#22c55e' }} />
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Live Data Fetch</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>— Pull real posts from Twitter/X & YouTube APIs</span>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            className="filter-input"
+            placeholder="Enter keyword to search (e.g. communal violence, protest, election)"
+            value={liveQuery}
+            onChange={(e) => setLiveQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleLiveFetch()}
+            style={{ flex: 1, minWidth: 250 }}
+          />
+          <button
+            onClick={handleLiveFetch}
+            disabled={liveFetching || !liveQuery.trim()}
+            style={{
+              padding: '8px 18px',
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: 'none',
+              background: liveFetching ? 'var(--bg-tertiary)' : 'linear-gradient(135deg, #22c55e, #16a34a)',
+              color: liveFetching ? 'var(--text-muted)' : 'white',
+              cursor: liveFetching ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {liveFetching ? <Loader2 size={14} className="animate-pulse" /> : <Radio size={14} />}
+            {liveFetching ? 'Fetching...' : 'Fetch Live Data'}
+          </button>
+        </div>
+
+        {/* API Status Indicators */}
+        {apiStatus && (
+          <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 11 }}>
+            {Object.entries(apiStatus).filter(([k]) => k !== 'nlp_service').map(([key, val]: [string, any]) => (
+              <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, color: val.configured ? '#22c55e' : 'var(--text-muted)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: val.configured ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
+                {val.label || key}: {val.configured ? 'Connected' : 'No API Key'}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Live Fetch Result */}
+        {liveResult && (
+          <div style={{
+            marginTop: 10,
+            padding: '8px 12px',
+            borderRadius: 6,
+            fontSize: 12,
+            background: liveResult.total > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+            border: `1px solid ${liveResult.total > 0 ? '#22c55e33' : '#ef444433'}`,
+            color: liveResult.total > 0 ? '#22c55e' : '#ef4444',
+          }}>
+            {liveResult.total > 0 ? (
+              <span>✅ Fetched & classified <strong>{liveResult.total}</strong> live posts. They are now visible in the feed below.</span>
+            ) : (
+              <span>⚠️ No posts fetched. {liveResult.errors.join('. ')}</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="stats-row">
@@ -117,7 +250,36 @@ export default function Dashboard({ role }: DashboardProps) {
           No posts match your filters.
         </div>
       ) : (
-        posts.map((post) => <PostCard key={post.post_id} post={post} />)
+        posts.map((post) => (
+          <div key={post.post_id}>
+            <PostCard post={post} />
+            {/* Show media link for YouTube posts */}
+            {post.media_url && (
+              <div style={{ marginTop: -8, marginBottom: 14, paddingLeft: 16 }}>
+                <a
+                  href={post.media_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    borderRadius: 6,
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    color: '#ef4444',
+                    border: '1px solid #ef444433',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <Video size={12} /> Watch on YouTube <ExternalLink size={10} />
+                </a>
+              </div>
+            )}
+          </div>
+        ))
       )}
 
       {totalPages > 1 && (

@@ -22,7 +22,7 @@ class NLPConfig:
 
     # --- Mode ---
     mode: Literal["fixture", "kafka"] = field(
-        default_factory=lambda: os.getenv("MODE", "fixture")  # type: ignore[arg-type]
+        default_factory=lambda: os.getenv("MODE", "kafka")  # type: ignore[arg-type]
     )
 
     # --- Kafka ---
@@ -37,17 +37,22 @@ class NLPConfig:
     kafka_alerts_topic: str = "alerts"
 
     # --- Model ---
-    active_model: Literal["indicbert", "sarvam"] = field(
-        default_factory=lambda: os.getenv("ACTIVE_MODEL", "indicbert")  # type: ignore[arg-type]
+    active_model: Literal["indicbert", "muril", "sarvam", "zeroshot"] = field(
+        default_factory=lambda: os.getenv("ACTIVE_MODEL", "zeroshot")  # type: ignore[arg-type]
     )
     indicbert_model_path: str = field(
         default_factory=lambda: os.getenv(
-            "INDICBERT_MODEL_PATH", "ai4bharat/indic-bert"
+            "INDICBERT_MODEL_PATH", "google/muril-base-cased"
         )
     )
     sarvam_model_path: str = field(
         default_factory=lambda: os.getenv(
             "SARVAM_MODEL_PATH", "sarvamai/sarvam-m"
+        )
+    )
+    muril_model_path: str = field(
+        default_factory=lambda: os.getenv(
+            "MURIL_MODEL_PATH", "google/muril-base-cased"
         )
     )
     model_version: str = field(

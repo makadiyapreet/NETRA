@@ -21,6 +21,7 @@ What it does (in order):
  10. Prints a full summary dashboard
 """
 
+import argparse
 import json
 import os
 import sys
@@ -32,7 +33,14 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-os.environ.setdefault("MODE", "fixture")
+# ── CLI args ────────────────────────────────────────────────────────────────
+_parser = argparse.ArgumentParser(description="NETRA full demo & verification")
+_parser.add_argument(
+    "--fixture", action="store_true",
+    help="Run in fixture (synthetic data) mode instead of real/kafka mode"
+)
+_args, _ = _parser.parse_known_args()
+os.environ.setdefault("MODE", "fixture" if _args.fixture else "kafka")
 
 # ── Colors ──────────────────────────────────────────────────────────────────
 GREEN = "\033[92m"

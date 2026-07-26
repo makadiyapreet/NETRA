@@ -1,3 +1,3 @@
-"""PS05 Threat Analyzer — Ingestion Layer."""
+"""NETRA — Ingestion Layer."""
 
 __version__ = "0.1.0"

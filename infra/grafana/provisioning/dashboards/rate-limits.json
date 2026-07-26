@@ -1,0 +1,82 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 50}, {"color": "red", "value": 80}] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "API Rate Limit Hits (per platform)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(netra_rate_limit_hits_total[5m])", "legendFormat": "{{platform}}" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 100}, {"color": "green", "value": 500}] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Remaining API Quota (per platform)",
+      "type": "gauge",
+      "targets": [
+        { "expr": "netra_api_remaining_quota", "legendFormat": "{{platform}}" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 3}, {"color": "red", "value": 5}] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "title": "Consecutive Failures (Circuit Breaker)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "netra_consecutive_failures", "legendFormat": "{{platform}}" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"options": {"0": {"text": "CLOSED", "color": "green"}}, "type": "value"},
+            {"options": {"1": {"text": "HALF-OPEN", "color": "yellow"}}, "type": "value"},
+            {"options": {"2": {"text": "OPEN", "color": "red"}}, "type": "value"}
+          ]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "title": "Circuit Breaker State",
+      "type": "stat",
+      "targets": [
+        { "expr": "netra_circuit_state", "legendFormat": "{{platform}}" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["netra", "rate-limits"],
+  "title": "NETRA — API Rate Limits & Circuit Breakers",
+  "uid": "netra-rate-limits",
+  "version": 1
+}

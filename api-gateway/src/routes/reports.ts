@@ -58,7 +58,9 @@ router.post(
         threat_category: p.classification.threat_category,
         confidence: p.classification.confidence,
         text_preview: p.text.slice(0, 120) + (p.text.length > 120 ? '...' : ''),
-        geo: p.geo_location?.city || 'Unknown'
+        full_text: p.text,
+        geo: p.geo_location?.city || 'Unknown',
+        post_url: p.post_url
       })),
       recommendations: [
         'Escalate high-confidence incitement posts to law enforcement.',

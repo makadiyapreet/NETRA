@@ -24,7 +24,7 @@
     },
     "platform": {
       "type": "string",
-      "enum": ["twitter", "instagram", "facebook", "youtube"],
+      "enum": ["twitter", "instagram", "facebook", "youtube", "telegram", "web"],
       "description": "Source platform."
     },
     "author_id": {
@@ -56,7 +56,10 @@
           "properties": {
             "lat": { "type": "number" },
             "lng": { "type": "number" },
-            "place_name": { "type": "string" }
+            "place_name": { "type": "string" },
+            "country": { "type": "string", "description": "ISO 3166-1 alpha-2 or country name (e.g. 'India')" },
+            "state": { "type": "string", "description": "State / province name (e.g. 'Gujarat')" },
+            "city": { "type": "string", "description": "City / district name (e.g. 'Ahmedabad')" }
           }
         },
         { "type": "null" }
@@ -117,6 +120,11 @@
         }
       },
       "additionalProperties": true
+    },
+    "post_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Original platform URL for the post."
     }
   },
   "additionalProperties": false

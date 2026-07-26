@@ -1,7 +1,8 @@
 """
 Language identification for Indic languages using IndicLID and fastText fallback.
 
-Supports detection of: Gujarati (gu), Hindi (hi), English (en), and code-mixed (mixed).
+Supports detection of: Gujarati (gu), Hindi (hi), English (en), Marathi (mr),
+Bengali (bn), Punjabi (pa), and code-mixed (mixed).
 Uses AI4Bharat IndicLID-BERT for native-script text and IndicLID-FTR for Romanized text,
 with a fastText lid.176 fallback for low-confidence cases.
 """
@@ -16,8 +17,10 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # ── Script-detection regex patterns ─────────────────────────────────────────
-_DEVANAGARI_RE = re.compile(r"[\u0900-\u097F]")
+_DEVANAGARI_RE = re.compile(r"[\u0900-\u097F]")  # Hindi, Marathi, Sanskrit
 _GUJARATI_RE = re.compile(r"[\u0A80-\u0AFF]")
+_BENGALI_RE = re.compile(r"[\u0980-\u09FF]")    # Bengali, Assamese
+_GURMUKHI_RE = re.compile(r"[\u0A00-\u0A7F]")   # Punjabi (Gurmukhi script)
 _LATIN_RE = re.compile(r"[a-zA-Z]")
 
 # ISO 639-1 / IndicLID label → our canonical codes
@@ -25,15 +28,27 @@ _INDICLID_LABEL_MAP: dict[str, str] = {
     "guj": "gu",
     "hin": "hi",
     "eng": "en",
+    "mar": "mr",
+    "ben": "bn",
+    "pan": "pa",
     "guj-Latn": "gu",  # Romanized Gujarati
     "hin-Latn": "hi",  # Romanized Hindi
     "eng-Latn": "en",
+    "mar-Latn": "mr",  # Romanized Marathi
+    "ben-Latn": "bn",  # Romanized Bengali
+    "pan-Latn": "pa",  # Romanized Punjabi
     "Gujarati": "gu",
     "Hindi": "hi",
     "English": "en",
+    "Marathi": "mr",
+    "Bengali": "bn",
+    "Punjabi": "pa",
     "gu": "gu",
     "hi": "hi",
     "en": "en",
+    "mr": "mr",
+    "bn": "bn",
+    "pa": "pa",
 }
 
 # Minimum confidence to trust a single-language detection
@@ -46,7 +61,7 @@ _MIXED_RATIO_THRESHOLD = 0.3
 class LanguageResult:
     """Result of language identification."""
 
-    language: str  # "gu" | "hi" | "en" | "mixed"
+    language: str  # "gu" | "hi" | "en" | "mr" | "bn" | "pa" | "mixed"
     confidence: float  # 0.0 – 1.0
     script: str  # "native" | "roman" | "mixed"
     raw_scores: dict[str, float]  # all language scores from the model

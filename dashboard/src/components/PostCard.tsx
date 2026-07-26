@@ -1,4 +1,4 @@
-import { Heart, Share2, MessageCircle, MapPin } from 'lucide-react';
+import { Heart, Share2, MessageCircle, MapPin, ExternalLink } from 'lucide-react';
 
 interface PostCardProps {
   post: any;
@@ -37,7 +37,17 @@ export default function PostCard({ post, selectable, selected, onSelect }: PostC
         <span className={badgeClass}>{cat}</span>
       </div>
 
-      <p className="post-card-text">{post.text}</p>
+      <div style={{ position: 'relative' }}>
+        {post.post_url ? (
+          <a href={post.post_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }} title="View on Platform">
+            <p className="post-card-text" style={{ cursor: 'pointer' }}>
+              {post.text} <ExternalLink size={12} style={{ display: 'inline', color: 'var(--text-muted)' }} />
+            </p>
+          </a>
+        ) : (
+          <p className="post-card-text">{post.text}</p>
+        )}
+      </div>
 
       <div className="post-card-footer">
         <div className="post-card-stats">

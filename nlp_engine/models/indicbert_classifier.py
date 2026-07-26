@@ -40,7 +40,6 @@ class ClassificationResult:
 DEFAULT_MODEL = "google/muril-base-cased"  # Non-gated, freely available
 FALLBACK_MODELS = [
     "google/muril-base-cased",       # Google's MuRIL — 17 Indian languages
-    "ai4bharat/indic-bert",          # IndicBERT — gated, needs HF login
     "xlm-roberta-base",              # XLM-R — general multilingual fallback
 ]
 

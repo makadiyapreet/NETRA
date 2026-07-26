@@ -1,23 +1,90 @@
+import { useState, useEffect } from 'react';
+import { COUNTRIES_DATA, getCountryByName, getStateByName } from '../utils/geoData';
+
 interface FilterBarProps {
   filters: {
     language: string;
     geo_location: string;
     keyword: string;
     threat_category: string;
+    platform?: string;
+    jurisdiction?: string;
+    country?: string;
+    state?: string;
+    city?: string;
   };
   onChange: (key: string, value: string) => void;
   onClear: () => void;
 }
 
-const languages = ['', 'en', 'hi', 'gu', 'mixed'];
+const languages = [
+  { code: '', label: 'All Languages' },
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'Hindi' },
+  { code: 'gu', label: 'Gujarati' },
+  { code: 'mr', label: 'Marathi' },
+  { code: 'bn', label: 'Bengali' },
+  { code: 'pa', label: 'Punjabi' },
+  { code: 'mixed', label: 'Code-Mixed' },
+];
+
 const categories = ['', 'Inflammatory', 'IncitementToViolence', 'FakeNews', 'Neutral'];
-const cities = ['', 'Ahmedabad', 'Delhi', 'Mumbai', 'Surat', 'Rajkot', 'Pune', 'Bengaluru', 'Kolkata', 'Hyderabad', 'Jaipur', 'Lucknow', 'Varanasi', 'Vadodara', 'Gandhinagar', 'Indore', 'Nagpur', 'Bhopal', 'Bhavnagar', 'Chennai'];
+
+const platforms = [
+  { value: '', label: 'All Platforms' },
+  { value: 'Twitter', label: 'Twitter / X' },
+  { value: 'Instagram', label: 'Instagram' },
+  { value: 'Facebook', label: 'Facebook' },
+  { value: 'YouTube', label: 'YouTube' },
+  { value: 'Telegram', label: 'Telegram' },
+];
 
 export default function FilterBar({ filters, onChange, onClear }: FilterBarProps) {
+  const [selectedCountry, setSelectedCountry] = useState(filters.country || '');
+  const [selectedState, setSelectedState] = useState(filters.state || '');
+
+  useEffect(() => {
+    if (filters.country !== undefined) setSelectedCountry(filters.country);
+    if (filters.state !== undefined) setSelectedState(filters.state);
+  }, [filters.country, filters.state]);
+
+  const countryObj = getCountryByName(selectedCountry);
+  const availableStates = countryObj ? countryObj.states : [];
+
+  const stateObj = getStateByName(selectedCountry, selectedState);
+  const availableCities = stateObj ? stateObj.cities : [];
+
+  const handleCountryChange = (country: string) => {
+    setSelectedCountry(country);
+    setSelectedState('');
+    onChange('country', country);
+    onChange('state', '');
+    onChange('city', '');
+    onChange('geo_location', '');
+  };
+
+  const handleStateChange = (state: string) => {
+    setSelectedState(state);
+    onChange('state', state);
+    onChange('city', '');
+    onChange('geo_location', state);
+  };
+
+  const handleCityChange = (city: string) => {
+    onChange('city', city);
+    onChange('geo_location', city);
+  };
+
+  const handleClearAll = () => {
+    setSelectedCountry('');
+    setSelectedState('');
+    onClear();
+  };
+
   return (
     <div className="filter-bar">
       <div className="filter-group">
-        <span className="filter-label">Search</span>
+        <span className="filter-label">Search Keyword</span>
         <input
           className="filter-input"
           type="text"
@@ -26,6 +93,7 @@ export default function FilterBar({ filters, onChange, onClear }: FilterBarProps
           onChange={(e) => onChange('keyword', e.target.value)}
         />
       </div>
+
       <div className="filter-group">
         <span className="filter-label">Language</span>
         <select
@@ -34,22 +102,72 @@ export default function FilterBar({ filters, onChange, onClear }: FilterBarProps
           onChange={(e) => onChange('language', e.target.value)}
         >
           {languages.map((l) => (
-            <option key={l} value={l}>{l || 'All Languages'}</option>
+            <option key={l.code} value={l.code}>{l.label}</option>
           ))}
         </select>
       </div>
+
+      {/* Cascading Location Filter: Country -> State -> City */}
       <div className="filter-group">
-        <span className="filter-label">Location</span>
+        <span className="filter-label">Country</span>
         <select
           className="filter-select"
-          value={filters.geo_location}
-          onChange={(e) => onChange('geo_location', e.target.value)}
+          value={selectedCountry}
+          onChange={(e) => handleCountryChange(e.target.value)}
         >
-          {cities.map((c) => (
-            <option key={c} value={c}>{c || 'All Locations'}</option>
+          <option value="">All Countries</option>
+          {COUNTRIES_DATA.map((c) => (
+            <option key={c.code} value={c.name}>{c.name}</option>
           ))}
         </select>
       </div>
+
+      {selectedCountry && (
+        <div className="filter-group">
+          <span className="filter-label">State / Region</span>
+          <select
+            className="filter-select"
+            value={selectedState}
+            onChange={(e) => handleStateChange(e.target.value)}
+          >
+            <option value="">All States</option>
+            {availableStates.map((s) => (
+              <option key={s.name} value={s.name}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {selectedState && (
+        <div className="filter-group">
+          <span className="filter-label">City</span>
+          <select
+            className="filter-select"
+            value={filters.city || ''}
+            onChange={(e) => handleCityChange(e.target.value)}
+          >
+            <option value="">All Cities</option>
+            {availableCities.map((c) => (
+              <option key={c.name} value={c.name}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Platform Filter */}
+      <div className="filter-group">
+        <span className="filter-label">Platform</span>
+        <select
+          className="filter-select"
+          value={filters.platform || ''}
+          onChange={(e) => onChange('platform', e.target.value)}
+        >
+          {platforms.map((p) => (
+            <option key={p.value} value={p.value}>{p.label}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="filter-group">
         <span className="filter-label">Threat Category</span>
         <select
@@ -62,10 +180,10 @@ export default function FilterBar({ filters, onChange, onClear }: FilterBarProps
           ))}
         </select>
       </div>
-      <div className="filter-group" style={{ justifyContent: 'flex-end' }}>
-        <span className="filter-label">&nbsp;</span>
-        <button className="btn btn-ghost btn-sm" onClick={onClear}>Clear</button>
-      </div>
+
+      <button className="clear-filters-btn" onClick={handleClearAll}>
+        Clear Filters
+      </button>
     </div>
   );
 }

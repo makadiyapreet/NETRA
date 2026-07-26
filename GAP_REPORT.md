@@ -1,6 +1,6 @@
 # NETRA — GAP REPORT
 
-**Project:** PS05 Threat Analyzer (ERH26_PS_05)  
+**Project:** NETRA (ERH26_PS_05)  
 **Date:** 2024-07-24  
 **Phase:** A — Audit & Complete  
 
@@ -79,3 +79,30 @@ Per the preservation rules:
 - All fixture data files — **untouched**
 - All shared schemas — **untouched**
 - All existing tests — **untouched**
+
+---
+
+## 5. Phase B — Upgrade Pass (July 2026)
+
+5 additional gaps identified and resolved in the upgrade pass:
+
+| # | Objective | Gap | Resolution |
+|---|-----------|-----|------------|
+| 23 | Real Data Default | System defaulted to `MODE=fixture` everywhere | ✅ Flipped to `MODE=kafka` in 4 files: `nlp_engine/config.py`, `server.ts`, `kafka-consumer.ts`, `run_demo.py` |
+| 24 | Dark/Light Theme | Dashboard was dark-only, no theme toggle | ✅ Built: `ThemeContext.tsx`, light-mode CSS variables, theme toggle in Sidebar, persistent via localStorage |
+| 25 | Global Search | No unified keyword search across entities | ✅ Built: `GET /api/search` route + `SearchResults.tsx` page querying posts, alerts, trends, clusters |
+| 26 | Watchlist UI | Watchlist CRUD had no HTTP API or frontend | ✅ Built: `watchlist_api.py` (FastAPI on :8002), `routes/watchlist.ts` (proxy), `WatchlistManager.tsx` (Admin-only) |
+| 27 | MuRIL Classifier | MuRIL referenced in benchmarks but no implementation | ✅ Built: `muril_classifier.py`, `train_muril.py`, updated `evaluate.py` and `inference_service.py` |
+
+---
+
+## 6. Phase C — Architecture Transparency & Master Fix (July 2026)
+
+2 additional architectural gaps and ethical corrections resolved:
+
+| # | Objective | Gap | Resolution |
+|---|-----------|-----|------------|
+| 28 | Benchmark Transparency | Previous README claimed 89% accuracy on fine-tuned models, but `checkpoints/` was empty. | ✅ Architectural Pivot: Removed all claims of fine-tuned transformers. Shifted NLP Engine to a **Zero-Shot LLM Prompting** architecture using Sarvam AI and Groq. |
+| 29 | Pipeline Integrity | Live data was being fetched but not piped into DataStore/Dashboard in real-time. | ✅ Built: Master fix in `live-fetch.ts` to fetch, classify (via LLM), generate alerts, generate trend spikes, and push to `DataStore` seamlessly. |
+
+**Total gaps: 29 found, 29 resolved.**
