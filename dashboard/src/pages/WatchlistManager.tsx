@@ -44,6 +44,8 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
   const [matchKeyword, setMatchKeyword] = useState<string>('');
   const [matchLoading, setMatchLoading] = useState(false);
   const [matchTotal, setMatchTotal] = useState(0);
+  const [showMatchPanel, setShowMatchPanel] = useState(false);
+  const [liveFetching, setLiveFetching] = useState(false);
 
   // Form state
   const [formValue, setFormValue] = useState('');
@@ -111,7 +113,10 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
 
   async function fetchMatches(keyword: string, silent = false) {
     if (!keyword.trim()) return;
-    if (!silent) setMatchLoading(true);
+    if (!silent) {
+      setMatchLoading(true);
+      setShowMatchPanel(true);
+    }
     setMatchKeyword(keyword);
     try {
       const res = await fetch(`/api/watchlist/matches/${encodeURIComponent(keyword)}`);
@@ -126,6 +131,25 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
       }
     } finally {
       if (!silent) setMatchLoading(false);
+    }
+  }
+
+  // Trigger live YouTube fetch for the keyword, then retry matches
+  async function liveFetchAndMatch(keyword: string) {
+    setLiveFetching(true);
+    try {
+      await fetch('/api/live/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: keyword, platforms: ['youtube'] }),
+      });
+      // Wait a moment for DataStore to update, then re-search
+      await new Promise(r => setTimeout(r, 500));
+      await fetchMatches(keyword);
+    } catch (err) {
+      console.error('Live fetch failed:', err);
+    } finally {
+      setLiveFetching(false);
     }
   }
 
@@ -423,7 +447,7 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
       </div>
 
       {/* Main Content: Table + Matched Content side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: matchedPosts.length > 0 || matchLoading ? '1fr 1fr' : '1fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: showMatchPanel ? '1fr 1fr' : '1fr', gap: 20 }}>
         {/* Watchlist Table */}
         <div>
           {loading ? (
@@ -537,9 +561,9 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
         </div>
 
         {/* Matched Content Panel */}
-        {(matchedPosts.length > 0 || matchLoading) && (
+        {showMatchPanel && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
               <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ExternalLink size={16} style={{ color: 'var(--accent-cyan)' }} />
                 Matched Content
@@ -547,20 +571,29 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
                   — "{matchKeyword}"
                 </span>
               </h3>
-              <span style={{
-                padding: '3px 10px',
-                fontSize: 11,
-                fontWeight: 700,
-                borderRadius: 12,
-                background: matchTotal > 0 ? 'rgba(239,68,68,0.1)' : 'var(--bg-tertiary)',
-                color: matchTotal > 0 ? '#ef4444' : 'var(--text-muted)',
-                border: `1px solid ${matchTotal > 0 ? '#ef444433' : 'var(--border-subtle)'}`,
-              }}>
-                {matchTotal} match{matchTotal !== 1 ? 'es' : ''}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <RefreshCw size={10} /> Auto-refreshing
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{
+                  padding: '3px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  borderRadius: 12,
+                  background: matchTotal > 0 ? 'rgba(239,68,68,0.1)' : 'var(--bg-tertiary)',
+                  color: matchTotal > 0 ? '#ef4444' : 'var(--text-muted)',
+                  border: `1px solid ${matchTotal > 0 ? '#ef444433' : 'var(--border-subtle)'}`,
+                }}>
+                  {matchTotal} match{matchTotal !== 1 ? 'es' : ''}
+                </span>
+                <button
+                  onClick={() => { setShowMatchPanel(false); setMatchKeyword(''); setMatchedPosts([]); setMatchTotal(0); }}
+                  style={{
+                    padding: '3px 8px', fontSize: 11, fontWeight: 600, borderRadius: 6,
+                    border: '1px solid var(--border-subtle)', background: 'var(--bg-tertiary)',
+                    color: 'var(--text-muted)', cursor: 'pointer',
+                  }}
+                >
+                  ✕ Close
+                </button>
+              </div>
             </div>
 
             {matchLoading ? (
@@ -568,8 +601,30 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
                 <div className="animate-pulse">Searching posts...</div>
               </div>
             ) : matchedPosts.length === 0 ? (
-              <div className="glass-card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                No posts found matching "{matchKeyword}"
+              <div className="glass-card" style={{ padding: 30, textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: 13 }}>
+                  No posts found matching "<strong>{matchKeyword}</strong>" in the current data store.
+                </p>
+                <button
+                  onClick={() => liveFetchAndMatch(matchKeyword)}
+                  disabled={liveFetching}
+                  style={{
+                    padding: '8px 18px', fontSize: 12, fontWeight: 700, borderRadius: 8,
+                    border: '1px solid var(--accent-cyan)',
+                    background: 'var(--accent-cyan-dim, rgba(0,212,255,0.1))',
+                    color: 'var(--accent-cyan)', cursor: liveFetching ? 'wait' : 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  {liveFetching ? (
+                    <><RefreshCw size={12} className="animate-spin" /> Fetching from YouTube...</>
+                  ) : (
+                    <><Search size={12} /> Fetch Live from YouTube</>
+                  )}
+                </button>
+                <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 10 }}>
+                  This will search YouTube for "{matchKeyword}" and add matching posts to the data store.
+                </p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>

@@ -29,13 +29,35 @@ export default function NetworkView() {
 
   useEffect(() => {
     fetchClusters();
+    fetchAllBotScores();
   }, []);
+
+  // Standalone bot scores — always fetched, shown when no clusters exist
+  const [allBotScores, setAllBotScores] = useState<BotScore[]>([]);
+
+  async function fetchAllBotScores() {
+    try {
+      const res = await fetch('/api/network/bot-scores');
+      if (res.ok) {
+        const data = await res.json();
+        const scores = data.data || (Array.isArray(data) ? data : []);
+        setAllBotScores(scores);
+        // Also populate the botScores map for reuse
+        const scoresMap: Record<string, BotScore> = {};
+        for (const s of scores) {
+          scoresMap[s.account_id] = s;
+        }
+        setBotScores(prev => ({ ...prev, ...scoresMap }));
+      }
+    } catch {
+      // Bot scores unavailable
+    }
+  }
 
   async function fetchClusters() {
     try {
       const res = await fetch('/api/network/clusters');
       if (!res.ok) {
-        // Network service is down — show honest error state
         let msg = 'Network analysis service unavailable';
         try {
           const errBody = await res.json();
@@ -46,7 +68,6 @@ export default function NetworkView() {
         return;
       }
       const data = await res.json();
-      // Handle both array and object responses
       const clusterList = Array.isArray(data) ? data : (data.data || []);
       setClusters(clusterList);
       setServiceError(null);
@@ -515,6 +536,180 @@ export default function NetworkView() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Standalone Bot Scores — shown when no clusters but posts exist */}
+      {clusters.length === 0 && allBotScores.length > 0 && (
+        <>
+          {/* Stats Row */}
+          <div className="stats-row" style={{ marginBottom: 20, marginTop: 8 }}>
+            <div className="glass-card stat-card">
+              <div className="stat-card-label">
+                <Bot size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Accounts Analyzed
+              </div>
+              <div className="stat-card-value">{allBotScores.length}</div>
+            </div>
+            <div className="glass-card stat-card">
+              <div className="stat-card-label">
+                <ShieldAlert size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Suspicious Accounts
+              </div>
+              <div className="stat-card-value" style={{ color: '#f97316' }}>
+                {allBotScores.filter(s => s.bot_likelihood >= 0.3).length}
+              </div>
+            </div>
+            <div className="glass-card stat-card">
+              <div className="stat-card-label">
+                <AlertTriangle size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> High Risk
+              </div>
+              <div className="stat-card-value" style={{ color: '#ef4444' }}>
+                {allBotScores.filter(s => s.bot_likelihood >= 0.7).length}
+              </div>
+            </div>
+            <div className="glass-card stat-card">
+              <div className="stat-card-label">
+                <Network size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Coordination Clusters
+              </div>
+              <div className="stat-card-value">0</div>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="glass-card" style={{ padding: '12px 18px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', fontSize: 12 }}>
+            <span style={{ fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bot Risk Levels:</span>
+            {[
+              { label: 'CRITICAL (90%+)', color: '#ef4444' },
+              { label: 'HIGH (80-89%)', color: '#f97316' },
+              { label: 'MEDIUM (70-79%)', color: '#eab308' },
+              { label: 'LOW (50-69%)', color: '#3b82f6' },
+              { label: 'SAFE (<50%)', color: '#22c55e' },
+            ].map((l) => (
+              <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 12, height: 12, borderRadius: '50%', background: l.color, display: 'inline-block', boxShadow: `0 0 8px ${l.color}44` }} />
+                <span style={{ color: 'var(--text-secondary)' }}>{l.label}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* Sort Controls */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Sort by:</span>
+            {(['risk', 'name'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSortBy(s)}
+                style={{
+                  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6,
+                  border: `1px solid ${sortBy === s ? 'var(--accent-cyan)' : 'var(--border-subtle)'}`,
+                  background: sortBy === s ? 'var(--accent-cyan-dim, rgba(0,212,255,0.1))' : 'var(--bg-tertiary)',
+                  color: sortBy === s ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                  cursor: 'pointer', textTransform: 'capitalize',
+                }}
+              >
+                {s === 'risk' ? '🎯 Bot Risk' : '🔤 Name'}
+              </button>
+            ))}
+          </div>
+
+          {/* Account Cards Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+            {[...allBotScores]
+              .sort((a, b) => sortBy === 'risk' ? b.bot_likelihood - a.bot_likelihood : a.account_id.localeCompare(b.account_id))
+              .map((scoreData) => {
+                const acc = scoreData.account_id;
+                const score = scoreData.bot_likelihood;
+                const indicators = scoreData.indicators || [];
+                const color = riskColor(score);
+                const isExpanded = expandedAccount === acc;
+                const postCount = (scoreData as any).post_count || 0;
+
+                return (
+                  <div
+                    key={acc}
+                    className="glass-card"
+                    style={{
+                      padding: 0, overflow: 'hidden',
+                      border: `1px solid ${isExpanded ? color + '66' : 'var(--border-subtle)'}`,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {/* Account Header */}
+                    <div
+                      style={{ padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+                      onClick={() => setExpandedAccount(isExpanded ? null : acc)}
+                    >
+                      <div style={{
+                        width: 42, height: 42, borderRadius: '50%',
+                        background: `${color}18`, border: `2px solid ${color}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, boxShadow: `0 0 12px ${color}33`,
+                      }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color }}>{(score * 100).toFixed(0)}</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Bot size={14} style={{ color, flexShrink: 0 }} />
+                          {acc}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                          {postCount} posts · {indicators.length} signals
+                        </div>
+                      </div>
+                      <span style={{
+                        padding: '3px 10px', fontSize: 10, fontWeight: 800, borderRadius: 12,
+                        background: `${color}18`, color, border: `1px solid ${color}44`,
+                        letterSpacing: '0.5px', flexShrink: 0,
+                      }}>
+                        {riskLabel(score)}
+                      </span>
+                      {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+                    </div>
+
+                    {/* Risk Bar */}
+                    <div style={{ height: 3, background: 'var(--bg-tertiary)' }}>
+                      <div style={{ height: '100%', width: `${score * 100}%`, background: `linear-gradient(90deg, ${color}88, ${color})`, transition: 'width 0.5s ease' }} />
+                    </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-tertiary)' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+                          <AlertTriangle size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> Detection Signals
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {indicators.length > 0 ? indicators.map((ind) => (
+                            <span key={ind} style={{
+                              padding: '4px 10px', fontSize: 11, borderRadius: 6,
+                              background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)',
+                              color: 'var(--text-secondary)',
+                            }}>
+                              {indicatorLabel(ind)}
+                            </span>
+                          )) : (
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>No suspicious signals detected — account appears normal</span>
+                          )}
+                        </div>
+                        <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-muted)' }}>
+                          Analysis source: <strong>{(scoreData as any).source || 'datastore_heuristic'}</strong> · Posts analyzed: <strong>{postCount}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </>
+      )}
+
+      {/* Empty state — no posts ingested yet */}
+      {clusters.length === 0 && allBotScores.length === 0 && !serviceError && !loading && (
+        <div className="glass-card" style={{ padding: '40px 30px', textAlign: 'center', marginTop: 20 }}>
+          <Network size={40} style={{ color: 'var(--text-muted)', marginBottom: 12, opacity: 0.5 }} />
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: 'var(--text-secondary)' }}>No Network Data Yet</h3>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: 400, margin: '0 auto' }}>
+            Network analysis requires ingested posts. Use <strong>Live Fetch</strong> from the Dashboard to fetch real social media data,
+            then return here to see bot scores and coordination analysis.
+          </p>
+        </div>
       )}
     </div>
   );

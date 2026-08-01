@@ -52,8 +52,26 @@ router.get('/matches/:keyword', (req: Request, res: Response) => {
   const searchTerms = expansion ? expansion.terms : [keyword];
   const matchCategories = expansion ? expansion.categories : [];
 
+  // Helper: create a word-boundary-aware match function.
+  // For ASCII/Latin terms, use \b word boundary so "rain" doesn't match "Brain" or "train".
+  // For non-Latin scripts (Hindi, Gujarati, etc.), use simple includes() since \b doesn't work with Unicode.
+  function makeWordMatcher(term: string): (text: string) => boolean {
+    const isAscii = /^[\x00-\x7F]+$/.test(term);
+    if (isAscii && term.length >= 2) {
+      try {
+        const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        return (text: string) => re.test(text);
+      } catch {
+        return (text: string) => text.toLowerCase().includes(term.toLowerCase());
+      }
+    }
+    // Non-ASCII or very short terms: fall back to includes
+    return (text: string) => text.toLowerCase().includes(term.toLowerCase());
+  }
+
   const matches = allPosts.data.filter((post: any) => {
-    const text = (post.text || '').toLowerCase();
+    const text = (post.text || '');
+    const textLower = text.toLowerCase();
     const classKeywords = (post.classification?.keywords || []).map((k: string) => k.toLowerCase());
     const handle = (post.author_handle || '').toLowerCase();
     const category = post.classification?.threat_category || '';
@@ -62,16 +80,17 @@ router.get('/matches/:keyword', (req: Request, res: Response) => {
     // Match by threat category
     if (matchCategories.includes(category)) return true;
 
-    // Match by any search term in text, keywords, or handle
+    // Match by any search term — using word-boundary matching for accuracy
     for (const term of searchTerms) {
-      const t = term.toLowerCase();
-      if (text.includes(t)) return true;
-      if (classKeywords.some((k: string) => k.includes(t))) return true;
-      if (handle.includes(t)) return true;
+      const matcher = makeWordMatcher(term);
+      if (matcher(text)) return true;
+      if (classKeywords.some((k: string) => k.includes(term.toLowerCase()))) return true;
+      if (matcher(handle)) return true;
     }
 
     // Direct keyword match (for non-expanded terms)
-    if (text.includes(keyword)) return true;
+    const kwMatcher = makeWordMatcher(keyword);
+    if (kwMatcher(text)) return true;
     if (classKeywords.some((k: string) => k.includes(keyword))) return true;
     if (city.includes(keyword)) return true;
 
@@ -84,7 +103,7 @@ router.get('/matches/:keyword', (req: Request, res: Response) => {
   res.json({
     keyword: rawKeyword,
     total: matches.length,
-    posts: matches.slice(0, 20),
+    posts: matches.slice(0, 50),
   });
 });
 
