@@ -44,11 +44,13 @@ def _get_connectors(settings=None):
             from ingestion.connectors.meta import MetaConnector
 
             connectors.append(MetaConnector(s))
+        else:
+            # Meta Graph API unavailable — use Playwright scraper as fallback
+            # for Facebook/Instagram public page coverage
+            from ingestion.connectors.scraper import FallbackScraper
 
-        # Scraper is always available as fallback
-        from ingestion.connectors.scraper import ScraperConnector
-
-        connectors.append(ScraperConnector())
+            logger.info("META_ACCESS_TOKEN not set — using FallbackScraper for Facebook/Instagram")
+            connectors.append(FallbackScraper())
 
     if not connectors:
         logger.warning("No connectors available — enable SIMULATOR_MODE or provide API keys")

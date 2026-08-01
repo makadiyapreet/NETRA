@@ -68,3 +68,5 @@ temp/
 
 NETRA_PROJECT_REPORT.md 
 FUTURE_ENHANCEMENTS.md
+api-gateway/node_modules
+dashboard/node_modules

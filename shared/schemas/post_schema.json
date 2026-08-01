@@ -125,6 +125,11 @@
       "type": "string",
       "format": "uri",
       "description": "Original platform URL for the post."
+    },
+    "is_synthetic": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, this post was generated synthetically (simulator, fixture, or demo fallback) and is NOT real social media data. Must be visually badged as SIMULATED everywhere it appears in the dashboard."
     }
   },
   "additionalProperties": false

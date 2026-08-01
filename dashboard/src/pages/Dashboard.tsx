@@ -178,13 +178,23 @@ export default function Dashboard({ role }: DashboardProps) {
 
         {/* API Status Indicators */}
         {apiStatus && (
-          <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 11 }}>
-            {Object.entries(apiStatus).filter(([k]) => k !== 'nlp_service').map(([key, val]: [string, any]) => (
-              <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, color: val.configured ? '#22c55e' : 'var(--text-muted)' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: val.configured ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
-                {val.label || key}: {val.configured ? 'Connected' : 'No API Key'}
-              </span>
-            ))}
+          <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 11, flexWrap: 'wrap' }}>
+            {Object.entries(apiStatus).filter(([k]) => k !== 'nlp_service').map(([key, val]: [string, any]) => {
+              const hasWarning = !!val.warning;
+              const dotColor = !val.configured ? '#ef4444' : hasWarning ? '#f59e0b' : '#22c55e';
+              const textColor = !val.configured ? 'var(--text-muted)' : hasWarning ? '#f59e0b' : '#22c55e';
+              const statusText = !val.configured 
+                ? 'No API Key' 
+                : hasWarning 
+                  ? (key === 'twitter' ? 'Auth Only (Free tier — no search)' : 'Fallback Mode')
+                  : 'Connected';
+              return (
+                <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, color: textColor }} title={val.warning || ''}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'inline-block' }} />
+                  {val.label || key}: {statusText}
+                </span>
+              );
+            })}
           </div>
         )}
 

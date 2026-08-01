@@ -64,16 +64,16 @@ class ZeroShotClassifier:
         if not self.sarvam_api_key:
             raise ValueError("SARVAM_API_KEY missing")
             
-        url = "https://api.sarvam.ai/chat/completions" # Based on OpenAI-compatible Sarvam endpoint (or standard format)
+        url = "https://api.sarvam.ai/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {self.sarvam_api_key}",
+            "api-subscription-key": self.sarvam_api_key,
             "Content-Type": "application/json"
         }
         
         user_prompt = f"Detected Language: {language}\nPost Text: {text}"
         
         payload = {
-            "model": "sarvam-2b", # Note: Using a placeholder model name for Sarvam assuming OpenAI compat, this should be accurate to Sarvam docs in reality
+            "model": "sarvam-m4",
             "messages": [
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": user_prompt}

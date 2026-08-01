@@ -13,11 +13,13 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${CYAN}======================================================${NC}"
-echo -e "${CYAN}   NETRA — Starting Local Services (Real Mode)        ${NC}"
+echo -e "${CYAN}   NETRA — Starting Local Services (Offline Mode)      ${NC}"
 echo -e "${CYAN}======================================================${NC}"
 
-# Default to kafka mode (real data). Override with MODE=fixture ./run_offline.sh if needed.
-export MODE=${MODE:-kafka}
+# Default to offline mode (real models + live APIs, no Docker needed).
+# Override: MODE=kafka ./run_offline.sh (requires Docker infra)
+#           MODE=fixture ./run_offline.sh (mock data only)
+export MODE=${MODE:-offline}
 
 # Activate python virtual environment if available
 if [ -d ".venv" ]; then
@@ -81,11 +83,45 @@ echo -e "Starting ${GREEN}React Dashboard${NC} on port 5173..."
 (cd dashboard && npm run dev) > /tmp/netra_dashboard.log 2>&1 &
 PIDS+=($!)
 
-sleep 3
+# ── Real health check polling — don't lie about service status ─────
+wait_for_health() {
+  local name="$1" url="$2" timeout="${3:-30}"
+  local waited=0
+  echo -ne "  Waiting for ${name}..."
+  until curl -sf "$url" > /dev/null 2>&1; do
+    sleep 1
+    waited=$((waited + 1))
+    if [ "$waited" -ge "$timeout" ]; then
+      echo -e " ${RED}✗ TIMEOUT after ${timeout}s${NC}"
+      echo -e "    ${YELLOW}Check log: /tmp/netra_$(echo $name | tr '[:upper:]' '[:lower:]' | tr ' ' '_').log${NC}"
+      return 1
+    fi
+  done
+  echo -e " ${GREEN}✓ ready (${waited}s)${NC}"
+  return 0
+}
 
-echo -e "\n${CYAN}======================================================${NC}"
-echo -e "${GREEN}🚀 All NETRA microservices are running!${NC}"
-echo -e "${CYAN}======================================================${NC}"
+echo -e "\n${CYAN}Waiting for services to become healthy...${NC}"
+
+FAILED=0
+wait_for_health "NLP Engine"       "http://localhost:8000/health" 40 || FAILED=$((FAILED + 1))
+wait_for_health "Network API"      "http://localhost:8001/health" 20 || FAILED=$((FAILED + 1))
+wait_for_health "Watchlist API"    "http://localhost:8002/health" 20 || FAILED=$((FAILED + 1))
+wait_for_health "API Gateway"      "http://localhost:4000/api/health" 20 || FAILED=$((FAILED + 1))
+wait_for_health "React Dashboard"  "http://localhost:5173" 20 || FAILED=$((FAILED + 1))
+
+echo ""
+if [ "$FAILED" -gt 0 ]; then
+  echo -e "${RED}======================================================${NC}"
+  echo -e "${RED}⚠ ${FAILED} service(s) failed to start!${NC}"
+  echo -e "${RED}Check the log files listed above for details.${NC}"
+  echo -e "${RED}======================================================${NC}"
+else
+  echo -e "${CYAN}======================================================${NC}"
+  echo -e "${GREEN}🚀 All NETRA microservices verified healthy!${NC}"
+  echo -e "${CYAN}======================================================${NC}"
+fi
+
 echo -e "  📦 Mode          : ${GREEN}${MODE}${NC}"
 echo -e "  🌐 Dashboard     : ${GREEN}http://localhost:5173${NC}"
 echo -e "  📡 API Gateway   : ${GREEN}http://localhost:4000${NC}"

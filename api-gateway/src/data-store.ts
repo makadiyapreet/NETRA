@@ -17,6 +17,8 @@ interface Post {
     keywords: string[];
   };
   post_url?: string;
+  is_synthetic?: boolean;
+  source?: string;
 }
 
 interface Alert {
@@ -56,7 +58,7 @@ export class DataStore {
     if (process.env.MODE === 'fixture') {
       this.loadFixtureData();
     } else {
-      console.log('📦 Real mode active: Starting with an empty data store');
+      console.log('📦 Real mode active: Starting with an empty data store (no fixture/mock data)');
     }
   }
 
@@ -72,10 +74,11 @@ export class DataStore {
       const filePath = path.resolve(__dirname, '../../fixtures/mock_data.json');
       const raw = fs.readFileSync(filePath, 'utf-8');
       const data: MockData = JSON.parse(raw);
-      this.posts = data.posts;
+      // Mark ALL fixture data as synthetic so it's never confused with real data
+      this.posts = data.posts.map(p => ({ ...p, is_synthetic: true, source: 'fixture' }));
       this.alerts = data.alerts;
       this.trendSpikes = data.trend_spikes;
-      console.log(`📦 Loaded ${this.posts.length} posts, ${this.alerts.length} alerts, ${this.trendSpikes.length} trend spikes from NETRA dataset`);
+      console.log(`📦 Loaded ${this.posts.length} FIXTURE posts (all marked is_synthetic=true), ${this.alerts.length} alerts, ${this.trendSpikes.length} trend spikes`);
     } catch (err) {
       console.error('❌ Failed to load fixture data:', err);
     }

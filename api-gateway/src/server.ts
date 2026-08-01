@@ -25,7 +25,7 @@ dotenv.config({ path: '../.env' });
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 4000;
-const MODE = process.env.MODE || 'kafka';
+const MODE = process.env.MODE || 'offline';
 
 // Middleware
 app.use(cors());
@@ -91,58 +91,87 @@ server.listen(PORT, async () => {
     } catch (err) {
       console.error('⚠️ Kafka/ES initialization error (continuing with local data):', err);
     }
+  } else {
+    console.log(`📦 MODE=${MODE} — Skipping Kafka/Elasticsearch (no Docker infrastructure needed)`);
   }
 
-  // ── Always emit alerts from data store (real-time feed) ─────
-  const alerts = dataStore.getAlerts();
-  let idx = 0;
+  // ── Only emit alerts for NEWLY created alerts from real classified posts ───
+  // (Don't replay old alerts in a loop — that's misleading)
+  let lastAlertCount = 0;
   setInterval(() => {
-    if (alerts.length > 0) {
-      io.emit('new-alert', alerts[idx]);
-      idx = (idx + 1) % alerts.length;
+    const currentAlerts = dataStore.getAlerts();
+    if (currentAlerts.length > lastAlertCount) {
+      // Emit only the NEW alerts since last check
+      const newAlerts = currentAlerts.slice(0, currentAlerts.length - lastAlertCount);
+      for (const alert of newAlerts) {
+        io.emit('new-alert', alert);
+      }
+      lastAlertCount = currentAlerts.length;
     }
-  }, 12000);
+  }, 5000);
+
+  // ── Data mode endpoint: reports whether synthetic data is present ────
+  app.get('/api/health/data-mode', (_req, res) => {
+    const allPosts = dataStore.getPosts({ size: 10000 });
+    const syntheticCount = allPosts.data.filter((p: any) => p.is_synthetic === true || p.source === 'fixture').length;
+    const realCount = allPosts.total - syntheticCount;
+    res.json({
+      mode: MODE,
+      total_posts: allPosts.total,
+      real_posts: realCount,
+      synthetic_posts: syntheticCount,
+      has_synthetic: syntheticCount > 0,
+      data_label: syntheticCount > 0
+        ? (realCount > 0 ? 'MIXED (Real + Simulated)' : 'SIMULATED DATA ONLY')
+        : (realCount > 0 ? 'LIVE DATA' : 'NO DATA YET'),
+    });
+  });
 
   // ── Background Live Data Poller ─────────────────────────────
   // Fetch real data on startup and periodically so the dashboard has live data
-  const ALL_LOCATIONS = [
-    // All States of India
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 
-    'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 
-    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 
-    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-    // All major cities of Gujarat
-    'Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Gandhinagar', 'Junagadh', 
-    'Anand', 'Navsari', 'Morbi', 'Bharuch', 'Vapi', 'Porbandar', 'Bhuj', 'Godhra', 'Patan', 'Palanpur',
-    // Major cities in other states
-    'Mumbai', 'Pune', 'Nagpur', 'New Delhi', 'Lucknow', 'Kanpur', 'Kolkata', 'Bengaluru', 'Chennai', 'Jaipur'
+  // Focus on Gujarat region per PS scope to conserve API quota.
+  const GUJARAT_LOCATIONS = [
+    'Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 
+    'Jamnagar', 'Gandhinagar', 'Junagadh', 'Gujarat',
   ];
 
-  setTimeout(() => {
-    console.log('[LIVE] Initiating background data fetch cycle for regional real data...');
-    const topics = ['news', 'breaking', 'police', 'alert', 'clash'];
-    
-    // We will process the locations sequentially to avoid hitting rate limits instantly
-    let locIndex = 0;
-    const fetchLive = () => {
-      const topic = topics[Math.floor(Math.random() * topics.length)];
-      const location = ALL_LOCATIONS[locIndex];
-      const q = `${topic} ${location}`; // e.g. "breaking Ahmedabad"
-      
-      console.log(`[LIVE] Background polling real data for: ${q}`);
-      fetch(`http://localhost:${PORT}/api/live/fetch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, platforms: ['twitter', 'youtube'] }) 
-      }).catch(err => console.error('[LIVE] Background fetch failed:', err.message));
+  const youtubeConfigured = !!process.env.YOUTUBE_API_KEY;
+  const metaTokenSet = !!process.env.META_ACCESS_TOKEN;
 
-      locIndex = (locIndex + 1) % ALL_LOCATIONS.length;
-    };
-    
-    // Fetch immediately, then every 15s to populate the map without destroying API quotas instantly
-    fetchLive();
-    setInterval(fetchLive, 15000); 
-  }, 5000);
+  if (youtubeConfigured) {
+    setTimeout(() => {
+      console.log('[LIVE] Starting background YouTube data poller (Twitter excluded — Free tier lacks search access)');
+      const topics = ['news', 'breaking', 'police', 'alert', 'protest'];
+      
+      let locIndex = 0;
+      const fetchLive = () => {
+        const topic = topics[Math.floor(Math.random() * topics.length)];
+        const location = GUJARAT_LOCATIONS[locIndex];
+        const q = `${topic} ${location}`;
+        
+        // Determine which platforms to poll
+        const platforms = ['youtube'];
+        if (!metaTokenSet) {
+          platforms.push('facebook'); // Use scraper fallback
+        }
+        
+        console.log(`[LIVE] Background polling for: ${q} on [${platforms.join(', ')}]`);
+        fetch(`http://localhost:${PORT}/api/live/fetch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q, platforms })
+        }).catch(err => console.error('[LIVE] Background fetch failed:', err.message));
+
+        locIndex = (locIndex + 1) % GUJARAT_LOCATIONS.length;
+      };
+      
+      // Fetch immediately, then every 60s to conserve YouTube API quota
+      fetchLive();
+      setInterval(fetchLive, 60000); 
+    }, 5000);
+  } else {
+    console.log('[LIVE] No API keys configured — background poller disabled');
+  }
 });
 
 // Graceful shutdown

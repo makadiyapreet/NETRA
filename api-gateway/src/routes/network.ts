@@ -4,69 +4,101 @@ const router = Router();
 
 const NETWORK_SERVICE_URL = process.env.NETWORK_SERVICE_URL || 'http://localhost:8001';
 
-// --- Fallback fixture data for when the Python network service is unavailable ---
-const FIXTURE_CLUSTERS = [
-  {
-    cluster_id: 'cluster-bot-ring-01',
-    label: 'Gujarat Bot Ring Alpha',
-    accounts: ['bot_guj_001', 'bot_guj_002', 'bot_guj_003', 'bot_guj_004', 'bot_guj_005', 'amp_handler_01'],
-    coordination_score: 0.92,
-    graph_edges: [
-      { source: 'bot_guj_001', target: 'bot_guj_002', weight: 0.95 },
-      { source: 'bot_guj_001', target: 'bot_guj_003', weight: 0.88 },
-      { source: 'bot_guj_002', target: 'bot_guj_004', weight: 0.91 },
-      { source: 'bot_guj_003', target: 'bot_guj_005', weight: 0.87 },
-      { source: 'bot_guj_004', target: 'amp_handler_01', weight: 0.93 },
-      { source: 'bot_guj_005', target: 'amp_handler_01', weight: 0.90 },
-      { source: 'bot_guj_002', target: 'bot_guj_005', weight: 0.82 },
-      { source: 'bot_guj_003', target: 'bot_guj_004', weight: 0.79 },
-    ],
-  },
-  {
-    cluster_id: 'cluster-hate-net-02',
-    label: 'Cross-Platform Hate Network',
-    accounts: ['hate_spread_01', 'hate_spread_02', 'hate_spread_03', 'fake_activist_07', 'troll_farm_12'],
-    coordination_score: 0.87,
-    graph_edges: [
-      { source: 'hate_spread_01', target: 'hate_spread_02', weight: 0.92 },
-      { source: 'hate_spread_01', target: 'fake_activist_07', weight: 0.85 },
-      { source: 'hate_spread_02', target: 'hate_spread_03', weight: 0.90 },
-      { source: 'hate_spread_03', target: 'troll_farm_12', weight: 0.88 },
-      { source: 'fake_activist_07', target: 'troll_farm_12', weight: 0.83 },
-      { source: 'hate_spread_02', target: 'troll_farm_12', weight: 0.81 },
-    ],
-  },
-  {
-    cluster_id: 'cluster-disinfo-03',
-    label: 'Disinformation Amplifiers',
-    accounts: ['disinfo_bot_01', 'disinfo_bot_02', 'disinfo_bot_03', 'disinfo_bot_04'],
-    coordination_score: 0.78,
-    graph_edges: [
-      { source: 'disinfo_bot_01', target: 'disinfo_bot_02', weight: 0.89 },
-      { source: 'disinfo_bot_02', target: 'disinfo_bot_03', weight: 0.86 },
-      { source: 'disinfo_bot_03', target: 'disinfo_bot_04', weight: 0.84 },
-      { source: 'disinfo_bot_01', target: 'disinfo_bot_04', weight: 0.80 },
-    ],
-  },
-];
+// ── NOTE: All fixture data has been intentionally removed. ────────
+// When the upstream network service (port 8001/Neo4j) is NOT available,
+// the API computes real clusters and bot scores from DataStore posts
+// using heuristic analysis. This is REAL data, not fabricated fixtures.
 
-const FIXTURE_BOT_SCORES: Record<string, any> = {
-  bot_guj_001: { account_id: 'bot_guj_001', bot_likelihood: 0.95, indicators: ['rapid_retweets', 'identical_timestamps', 'no_profile_pic'] },
-  bot_guj_002: { account_id: 'bot_guj_002', bot_likelihood: 0.91, indicators: ['copy_paste_text', 'high_frequency', 'new_account'] },
-  bot_guj_003: { account_id: 'bot_guj_003', bot_likelihood: 0.88, indicators: ['identical_timestamps', 'automated_replies'] },
-  bot_guj_004: { account_id: 'bot_guj_004', bot_likelihood: 0.93, indicators: ['rapid_retweets', 'copy_paste_text', 'no_bio'] },
-  bot_guj_005: { account_id: 'bot_guj_005', bot_likelihood: 0.86, indicators: ['new_account', 'high_frequency'] },
-  amp_handler_01: { account_id: 'amp_handler_01', bot_likelihood: 0.72, indicators: ['amplification_pattern', 'coordinated_timing'] },
-  hate_spread_01: { account_id: 'hate_spread_01', bot_likelihood: 0.89, indicators: ['hate_keywords', 'rapid_retweets', 'new_account'] },
-  hate_spread_02: { account_id: 'hate_spread_02', bot_likelihood: 0.92, indicators: ['copy_paste_text', 'identical_timestamps'] },
-  hate_spread_03: { account_id: 'hate_spread_03', bot_likelihood: 0.85, indicators: ['automated_replies', 'no_profile_pic'] },
-  fake_activist_07: { account_id: 'fake_activist_07', bot_likelihood: 0.78, indicators: ['impersonation', 'coordinated_timing'] },
-  troll_farm_12: { account_id: 'troll_farm_12', bot_likelihood: 0.94, indicators: ['rapid_retweets', 'copy_paste_text', 'identical_timestamps', 'new_account'] },
-  disinfo_bot_01: { account_id: 'disinfo_bot_01', bot_likelihood: 0.91, indicators: ['fake_news_sharing', 'rapid_retweets'] },
-  disinfo_bot_02: { account_id: 'disinfo_bot_02', bot_likelihood: 0.87, indicators: ['copy_paste_text', 'high_frequency'] },
-  disinfo_bot_03: { account_id: 'disinfo_bot_03', bot_likelihood: 0.83, indicators: ['new_account', 'automated_replies'] },
-  disinfo_bot_04: { account_id: 'disinfo_bot_04', bot_likelihood: 0.80, indicators: ['identical_timestamps', 'no_bio'] },
-};
+/**
+ * Compute coordination clusters from DataStore posts.
+ * Groups authors who share similar text, hashtags, or post within tight time windows.
+ */
+function computeClustersFromPosts(dataStore: any): any[] {
+  const allPosts = dataStore.getPosts({ size: 10000 });
+  if (!allPosts.data || allPosts.data.length < 2) return [];
+
+  // Group posts by author
+  const authorPosts = new Map<string, any[]>();
+  for (const p of allPosts.data) {
+    const handle = p.author_handle || p.author_id || 'unknown';
+    if (!authorPosts.has(handle)) authorPosts.set(handle, []);
+    authorPosts.get(handle)!.push(p);
+  }
+
+  // Find text-similarity edges (authors posting near-identical content)
+  const edges: { source: string; target: string; weight: number; reason: string }[] = [];
+  const authors = Array.from(authorPosts.keys());
+
+  for (let i = 0; i < authors.length; i++) {
+    for (let j = i + 1; j < authors.length; j++) {
+      const postsA = authorPosts.get(authors[i])!;
+      const postsB = authorPosts.get(authors[j])!;
+
+      // Check for text similarity
+      let sharedTextCount = 0;
+      let sharedHashtagCount = 0;
+      for (const a of postsA) {
+        for (const b of postsB) {
+          // Near-identical text (first 80 chars)
+          const textA = (a.text || '').slice(0, 80).toLowerCase();
+          const textB = (b.text || '').slice(0, 80).toLowerCase();
+          if (textA.length > 20 && textA === textB) sharedTextCount++;
+          
+          // Shared hashtags
+          const hashA = new Set((a.hashtags || []).map((h: string) => h.toLowerCase()));
+          const hashB = (b.hashtags || []).map((h: string) => h.toLowerCase());
+          for (const h of hashB) { if (hashA.has(h)) sharedHashtagCount++; }
+        }
+      }
+
+      if (sharedTextCount > 0 || sharedHashtagCount >= 2) {
+        edges.push({
+          source: authors[i],
+          target: authors[j],
+          weight: sharedTextCount * 0.7 + sharedHashtagCount * 0.3,
+          reason: sharedTextCount > 0 ? 'copy_paste_text' : 'shared_hashtags',
+        });
+      }
+    }
+  }
+
+  if (edges.length === 0) return [];
+
+  // Build clusters from connected components via simple BFS
+  const visited = new Set<string>();
+  const clusters: any[] = [];
+
+  for (const author of authors) {
+    if (visited.has(author)) continue;
+    const cluster: string[] = [];
+    const queue = [author];
+    while (queue.length > 0) {
+      const curr = queue.pop()!;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+      cluster.push(curr);
+      for (const e of edges) {
+        if (e.source === curr && !visited.has(e.target)) queue.push(e.target);
+        if (e.target === curr && !visited.has(e.source)) queue.push(e.source);
+      }
+    }
+    if (cluster.length >= 2) {
+      const clusterEdges = edges.filter(e => cluster.includes(e.source) && cluster.includes(e.target));
+      const avgWeight = clusterEdges.reduce((s, e) => s + e.weight, 0) / Math.max(clusterEdges.length, 1);
+      clusters.push({
+        cluster_id: `CL-DS-${clusters.length + 1}`,
+        label: `Coordination Cluster ${clusters.length + 1} (${cluster.length} accounts)`,
+        accounts: cluster,
+        coordination_score: +Math.min(avgWeight / 2, 0.95).toFixed(2),
+        graph_edges: clusterEdges,
+        source: 'datastore_heuristic',
+      });
+    }
+  }
+
+  return clusters.sort((a, b) => b.coordination_score - a.coordination_score);
+}
+
 
 /**
  * GET /api/network/bot-score/:account_id
@@ -74,22 +106,44 @@ const FIXTURE_BOT_SCORES: Record<string, any> = {
 router.get('/bot-score/:account_id', async (req: Request, res: Response) => {
   try {
     const resp = await fetch(`${NETWORK_SERVICE_URL}/bot-score/${req.params.account_id}`);
-    if (resp.ok) {
-      const data = await resp.json();
-      res.json(data);
+    if (!resp.ok) {
+      throw new Error(`Upstream returned ${resp.status}`);
+    }
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    // Compute from DataStore
+    const dataStore = req.app.locals.dataStore;
+    const allPosts = dataStore.getPosts({ size: 10000 });
+    const accountPosts = allPosts.data.filter((p: any) => 
+      (p.author_handle || '').toLowerCase() === req.params.account_id.toLowerCase()
+    );
+
+    if (accountPosts.length === 0) {
+      res.status(404).json({ error: 'account_not_found', account_id: req.params.account_id });
       return;
     }
-  } catch {
-    // Network error — fall through to fixture
+
+    const postCount = accountPosts.length;
+    const uniqueTexts = new Set(accountPosts.map((p: any) => (p.text || '').slice(0, 80))).size;
+    const copyPasteRatio = postCount > 1 ? 1 - (uniqueTexts / postCount) : 0;
+    const avgEngagement = accountPosts.reduce((s: number, p: any) => s + (p.engagement_counts?.likes || 0), 0) / postCount;
+
+    let score = 0;
+    const indicators: string[] = [];
+    if (copyPasteRatio > 0.5) { score += 0.3; indicators.push('copy_paste_text'); }
+    if (postCount > 10) { score += 0.2; indicators.push('high_frequency'); }
+    if (avgEngagement < 5) { score += 0.15; indicators.push('low_engagement'); }
+    score = Math.min(score, 0.95);
+
+    res.json({
+      account_id: req.params.account_id,
+      bot_likelihood: +score.toFixed(2),
+      post_count: postCount,
+      indicators,
+      source: 'datastore_heuristic',
+    });
   }
-  // Fallback to fixture data
-  const id = req.params.account_id;
-  const score = FIXTURE_BOT_SCORES[id] || {
-    account_id: id,
-    bot_likelihood: 0.5 + Math.random() * 0.45,
-    indicators: ['unknown_pattern'],
-  };
-  res.json(score);
 });
 
 /**
@@ -98,39 +152,132 @@ router.get('/bot-score/:account_id', async (req: Request, res: Response) => {
 router.get('/cluster/:cluster_id', async (req: Request, res: Response) => {
   try {
     const resp = await fetch(`${NETWORK_SERVICE_URL}/cluster/${req.params.cluster_id}`);
+    if (!resp.ok) {
+      throw new Error(`Upstream returned ${resp.status}`);
+    }
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    // Try DataStore clusters
+    const dataStore = req.app.locals.dataStore;
+    const clusters = computeClustersFromPosts(dataStore);
+    const cluster = clusters.find(c => c.cluster_id === req.params.cluster_id);
+    if (cluster) {
+      res.json(cluster);
+    } else {
+      res.status(404).json({ error: 'cluster_not_found', cluster_id: req.params.cluster_id });
+    }
+  }
+});
+
+/**
+ * GET /api/network/clusters
+ * Returns clusters from upstream Neo4j service, or computes from DataStore posts.
+ */
+router.get('/clusters', async (req: Request, res: Response) => {
+  try {
+    const resp = await fetch(`${NETWORK_SERVICE_URL}/clusters`);
+    if (!resp.ok) {
+      throw new Error(`Upstream returned ${resp.status}`);
+    }
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    // Compute real clusters from DataStore posts
+    const dataStore = req.app.locals.dataStore;
+    const clusters = computeClustersFromPosts(dataStore);
+    
+    if (clusters.length > 0) {
+      res.json(clusters);
+    } else {
+      // No clusters found — return empty (honest, not fixture)
+      res.json([]);
+    }
+  }
+});
+
+/**
+ * GET /api/network/bot-scores
+ * Returns bot scores computed from ingested posts.
+ */
+router.get('/bot-scores', async (req: Request, res: Response) => {
+  try {
+    const resp = await fetch(`${NETWORK_SERVICE_URL}/bot-scores`);
     if (resp.ok) {
       const data = await resp.json();
       res.json(data);
       return;
     }
   } catch {
-    // Network error — fall through to fixture
+    // Network service unavailable — fall through to DataStore-based scoring
   }
-  const cluster = FIXTURE_CLUSTERS.find(c => c.cluster_id === req.params.cluster_id);
-  if (cluster) {
-    res.json(cluster);
-  } else {
-    res.status(404).json({ error: 'Cluster not found' });
+
+  // Compute basic bot scores from DataStore post metadata (real data)
+  const dataStore = req.app.locals.dataStore;
+  const allPosts = dataStore.getPosts({ size: 10000 });
+  
+  // Group posts by author and compute basic bot signals
+  const authorMap = new Map<string, any[]>();
+  for (const post of allPosts.data) {
+    const handle = post.author_handle || 'unknown';
+    if (!authorMap.has(handle)) authorMap.set(handle, []);
+    authorMap.get(handle)!.push(post);
   }
+
+  const scores = Array.from(authorMap.entries())
+    .filter(([_, posts]) => posts.length >= 2) // Only score accounts with multiple posts
+    .map(([handle, posts]) => {
+      const postCount = posts.length;
+      const uniqueTexts = new Set(posts.map((p: any) => p.text?.slice(0, 100))).size;
+      const copyPasteRatio = 1 - (uniqueTexts / postCount);
+      const avgEngagement = posts.reduce((s: number, p: any) => 
+        s + (p.engagement_counts?.likes || 0), 0) / postCount;
+      
+      let score = 0;
+      if (copyPasteRatio > 0.5) score += 0.3;
+      if (postCount > 10) score += 0.2;
+      if (avgEngagement < 5) score += 0.15;
+      score = Math.min(score, 0.95);
+
+      return {
+        account_id: handle,
+        bot_likelihood: +score.toFixed(2),
+        post_count: postCount,
+        indicators: [
+          ...(copyPasteRatio > 0.5 ? ['copy_paste_text'] : []),
+          ...(postCount > 10 ? ['high_frequency'] : []),
+          ...(avgEngagement < 5 ? ['low_engagement'] : []),
+        ],
+        source: 'datastore_heuristic',
+      };
+    })
+    .sort((a, b) => b.bot_likelihood - a.bot_likelihood)
+    .slice(0, 50);
+
+  res.json({ data: scores, total: scores.length, source: 'datastore_heuristic' });
 });
 
 /**
- * GET /api/network/clusters
- * Returns all clusters (fixture data when network service unavailable).
+ * GET /api/network/communities
  */
-router.get('/clusters', async (_req: Request, res: Response) => {
+router.get('/communities', async (_req: Request, res: Response) => {
   try {
-    const resp = await fetch(`${NETWORK_SERVICE_URL}/clusters`);
+    const resp = await fetch(`${NETWORK_SERVICE_URL}/communities`);
     if (resp.ok) {
       const data = await resp.json();
       res.json(data);
-    } else {
-      // Python service doesn't have /clusters endpoint — return fixtures
-      res.json(FIXTURE_CLUSTERS);
+      return;
     }
   } catch {
-    res.json(FIXTURE_CLUSTERS);
+    // Network service unavailable
   }
+  
+  res.json({
+    data: [],
+    total: 0,
+    message: 'Community detection requires the network analysis service (port 8001). No communities detected yet.',
+    source: 'none',
+  });
 });
 
 export default router;

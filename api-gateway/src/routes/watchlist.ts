@@ -17,40 +17,10 @@ router.use(extractRole);
 
 const WATCHLIST_API_BASE = `http://${process.env.WATCHLIST_API_HOST || 'localhost'}:${process.env.WATCHLIST_API_PORT || '8002'}`;
 
-// ── Fixture Watchlist Data ──────────────────────────────────────
-export const FIXTURE_WATCHLIST = {
-  keywords: [
-    { id: 1, keyword: 'दंगा', platform_filter: null, geo_area: 'Gujarat', is_active: true },
-    { id: 2, keyword: 'communal violence', platform_filter: 'twitter', geo_area: null, is_active: true },
-    { id: 3, keyword: 'हिंसा भड़काने', platform_filter: null, geo_area: 'Maharashtra', is_active: true },
-    { id: 4, keyword: 'fake news spread', platform_filter: 'telegram', geo_area: null, is_active: true },
-    { id: 5, keyword: 'riot planning', platform_filter: 'twitter', geo_area: 'Delhi', is_active: true },
-    { id: 6, keyword: 'bomb threat', platform_filter: null, geo_area: null, is_active: true },
-    { id: 7, keyword: 'ethnic cleansing', platform_filter: 'facebook', geo_area: null, is_active: false },
-    { id: 8, keyword: 'સાંપ્રદાયિક', platform_filter: null, geo_area: 'Gujarat', is_active: true },
-  ],
-  hashtags: [
-    { id: 101, hashtag: '#StopHate', platform_filter: 'twitter', geo_area: null, is_active: true },
-    { id: 102, hashtag: '#FakeAlert', platform_filter: null, geo_area: 'India', is_active: true },
-    { id: 103, hashtag: '#UrbanNaxal', platform_filter: 'twitter', geo_area: null, is_active: true },
-    { id: 104, hashtag: '#BreakingIndia', platform_filter: null, geo_area: null, is_active: true },
-    { id: 105, hashtag: '#PropagandaWatch', platform_filter: 'telegram', geo_area: null, is_active: true },
-    { id: 106, hashtag: '#HateSpeech', platform_filter: 'youtube', geo_area: null, is_active: false },
-  ],
-  geo_boxes: [
-    { id: 201, name: 'Ahmedabad Old City', lat_min: 23.00, lat_max: 23.05, lng_min: 72.55, lng_max: 72.62, is_active: true },
-    { id: 202, name: 'Mumbai Dharavi Area', lat_min: 19.04, lat_max: 19.06, lng_min: 72.85, lng_max: 72.87, is_active: true },
-    { id: 203, name: 'Delhi Shaheen Bagh', lat_min: 28.54, lat_max: 28.56, lng_min: 77.28, lng_max: 77.31, is_active: true },
-    { id: 204, name: 'Vadodara Industrial', lat_min: 22.28, lat_max: 22.32, lng_min: 73.16, lng_max: 73.22, is_active: true },
-  ],
-  profiles: [
-    { id: 301, handle: 'shadow_ops_gj', platform: 'telegram', profile_id: 'TG-90001', is_active: true },
-    { id: 302, handle: 'truth_warrior_99', platform: 'twitter', profile_id: 'TW-80002', is_active: true },
-    { id: 303, handle: 'news_faker_bot', platform: 'twitter', profile_id: 'TW-80003', is_active: true },
-    { id: 304, handle: 'hate_amplifier_7', platform: 'youtube', profile_id: 'YT-70004', is_active: false },
-    { id: 305, handle: 'communal_troll_12', platform: 'facebook', profile_id: 'FB-60005', is_active: true },
-  ],
-};
+// ── NOTE: FIXTURE_WATCHLIST has been intentionally removed. ────────
+// The API gateway NEVER returns fake/fixture watchlist data.
+// If the upstream watchlist API (port 8002) is down, we return a
+// clear 503 error so the frontend can show an honest "offline" state.
 
 /**
  * GET /api/watchlist/matches/:keyword
@@ -69,13 +39,13 @@ router.get('/matches/:keyword', (req: Request, res: Response) => {
     'fake news spread': { terms: ['fake', 'news', 'hoax', 'false', 'misleading', 'secretly', 'media silent', 'viral', 'share before delete', 'forwarded'], categories: ['FakeNews'] },
     'riot planning': { terms: ['riot', 'plan', 'target list', 'operations', 'gather', 'mobilize', 'हथियार', 'तैयार', 'location', 'tomorrow'], categories: ['IncitementToViolence'] },
     'bomb threat': { terms: ['bomb', 'blast', 'explosive', 'threat', 'target', 'attack', 'operations'], categories: ['IncitementToViolence'] },
-    'ethnic cleansing': { terms: ['cleansing', 'ethnic', 'exterminate', 'remove', 'बहार काढो', 'बहार काढો', 'dangerous'], categories: ['IncitementToViolence', 'Inflammatory'] },
+    'ethnic cleansing': { terms: ['cleansing', 'ethnic', 'exterminate', 'remove', 'बहार काढो', 'बहार काढो', 'dangerous'], categories: ['IncitementToViolence', 'Inflammatory'] },
     'સાંપ્રદાયિક': { terms: ['સાંપ્રદાયિક', 'communal', 'ગામ', 'community', 'dangerous', 'બરબાદ', 'સબક'], categories: ['IncitementToViolence', 'Inflammatory'] },
     'hate': { terms: ['hate', 'enemy', 'destroy', 'dangerous', 'trust', 'minority', 'lesson'], categories: ['Inflammatory', 'IncitementToViolence'] },
   };
 
-  // Search across all posts
-  const allPosts = dataStore.getPosts({ size: 1000 });
+  // Search across ALL posts in the data store
+  const allPosts = dataStore.getPosts({ size: 10000 });
 
   // Get expansion if available
   const expansion = KEYWORD_EXPANSIONS[keyword] || KEYWORD_EXPANSIONS[rawKeyword];
@@ -120,7 +90,7 @@ router.get('/matches/:keyword', (req: Request, res: Response) => {
 
 /**
  * GET /api/watchlist?type=keyword|hashtag|geo_box|profile&search=...
- * List all watchlist entries, optionally filtered by type and search string.
+ * Proxies to upstream watchlist API. Returns 503 if upstream is down — NEVER returns fixture data.
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -129,21 +99,23 @@ router.get('/', async (req: Request, res: Response) => {
     if (req.query.search) params.set('search', req.query.search as string);
 
     const upstream = await fetch(`${WATCHLIST_API_BASE}/watchlist?${params}`);
-    if (upstream.ok) {
-      const data: any = await upstream.json();
-      // Check if the data actually has entries
-      const hasData = data.keywords?.length || data.hashtags?.length || data.geo_boxes?.length || data.profiles?.length;
-      if (hasData) {
-        res.json(data);
-        return;
-      }
+    if (!upstream.ok) {
+      throw new Error(`Upstream returned ${upstream.status}: ${upstream.statusText}`);
     }
+    const data = await upstream.json();
+    // Return upstream data as-is — even if empty (empty is honest; fixture is not)
+    res.json(data);
   } catch (err) {
     console.error('Watchlist API proxy error (GET):', err);
+    console.warn('[WATCHLIST] Upstream watchlist API unreachable at', WATCHLIST_API_BASE);
+    res.status(503).json({
+      error: 'watchlist_service_unavailable',
+      message: `The watchlist API (port 8002) is not running. Start it with: python -m uvicorn ingestion.api.watchlist_api:app --port 8002`,
+      detail: String(err),
+    });
   }
-  // Fallback: return fixture data
-  res.json(FIXTURE_WATCHLIST);
 });
+
 
 /**
  * POST /api/watchlist — Add a new watchlist entry.

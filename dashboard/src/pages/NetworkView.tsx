@@ -25,6 +25,8 @@ export default function NetworkView() {
   const [expandedAccount, setExpandedAccount] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'risk' | 'name' | 'connections'>('risk');
 
+  const [serviceError, setServiceError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchClusters();
   }, []);
@@ -32,14 +34,30 @@ export default function NetworkView() {
   async function fetchClusters() {
     try {
       const res = await fetch('/api/network/clusters');
+      if (!res.ok) {
+        // Network service is down — show honest error state
+        let msg = 'Network analysis service unavailable';
+        try {
+          const errBody = await res.json();
+          msg = errBody.message || msg;
+        } catch (_) {}
+        setServiceError(msg);
+        setClusters([]);
+        return;
+      }
       const data = await res.json();
-      setClusters(data);
-      if (data && data.length > 0) {
-        setSelectedCluster(data[0].cluster_id);
-        await fetchBotScores(data[0]);
+      // Handle both array and object responses
+      const clusterList = Array.isArray(data) ? data : (data.data || []);
+      setClusters(clusterList);
+      setServiceError(null);
+      if (clusterList.length > 0) {
+        setSelectedCluster(clusterList[0].cluster_id);
+        await fetchBotScores(clusterList[0]);
       }
     } catch (err) {
       console.error('Failed to fetch clusters:', err);
+      setServiceError('Cannot connect to the API gateway');
+      setClusters([]);
     } finally {
       setLoading(false);
     }
@@ -51,9 +69,14 @@ export default function NetworkView() {
       cluster.accounts.map(async (acc) => {
         try {
           const res = await fetch(`/api/network/bot-score/${acc}`);
+          if (!res.ok) {
+            // Service unavailable — show honest "unknown" state, not a fabricated score
+            scores[acc] = { account_id: acc, bot_likelihood: -1, indicators: ['service_unavailable'] };
+            return;
+          }
           scores[acc] = await res.json();
         } catch {
-          scores[acc] = { account_id: acc, bot_likelihood: 0.85, indicators: ['rapid_retweets', 'similar_captions'] };
+          scores[acc] = { account_id: acc, bot_likelihood: -1, indicators: ['fetch_failed'] };
         }
       })
     );
@@ -104,6 +127,7 @@ export default function NetworkView() {
 
   // Risk color helper
   function riskColor(score: number): string {
+    if (score < 0) return '#666'; // unavailable
     if (score >= 0.9) return '#ef4444';
     if (score >= 0.8) return '#f97316';
     if (score >= 0.7) return '#eab308';
@@ -148,6 +172,23 @@ export default function NetworkView() {
     );
   }
 
+  if (serviceError) {
+    return (
+      <div className="animate-fade" style={{ padding: 40, textAlign: 'center' }}>
+        <div className="glass-card" style={{ padding: '30px 40px', maxWidth: 500, margin: '0 auto', borderLeft: '4px solid #f59e0b' }}>
+          <AlertTriangle size={28} style={{ color: '#f59e0b', marginBottom: 12 }} />
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Network Analysis Service Offline</h3>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 16 }}>{serviceError}</p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            Start it with: <code style={{ background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4 }}>
+              python -m uvicorn network_analysis.api.network_service:app --port 8001
+            </code>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade">
       {/* Header */}
@@ -158,7 +199,7 @@ export default function NetworkView() {
             Bot & Coordination Network Analysis
           </h2>
           <p className="page-subtitle">
-            {clusters.length} coordination clusters detected · Select a cluster to inspect accounts & connections
+            {clusters.length} coordination clusters detected · {clusters.length > 0 ? 'Select a cluster to inspect accounts & connections' : 'Ingest posts via Live Fetch to detect coordination patterns'}
           </p>
         </div>
 
@@ -252,7 +293,8 @@ export default function NetworkView() {
           {/* Account Cards Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
             {sortedAccounts.map((acc) => {
-              const score = botScores[acc]?.bot_likelihood || 0.5;
+              const rawScore = botScores[acc]?.bot_likelihood;
+              const score = rawScore != null && rawScore >= 0 ? rawScore : -1; // -1 = unavailable
               const indicators = botScores[acc]?.indicators || [];
               const connections = getConnections(acc);
               const color = riskColor(score);
@@ -431,15 +473,15 @@ export default function NetworkView() {
                 <tbody>
                   {cluster.accounts.map((row) => (
                     <tr key={row}>
-                      <td style={{ padding: '8px 14px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, color: riskColor(botScores[row]?.bot_likelihood || 0.5), position: 'sticky', left: 0, background: 'var(--bg-card)', zIndex: 1 }}>
+                      <td style={{ padding: '8px 14px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, color: riskColor(botScores[row]?.bot_likelihood ?? -1), position: 'sticky', left: 0, background: 'var(--bg-card)', zIndex: 1 }}>
                         @{row}
                       </td>
                       {cluster.accounts.map((col) => {
                         if (row === col) {
                           return (
                             <td key={col} style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-tertiary)' }}>
-                              <span style={{ color: riskColor(botScores[row]?.bot_likelihood || 0.5), fontWeight: 700 }}>
-                                {((botScores[row]?.bot_likelihood || 0.5) * 100).toFixed(0)}%
+                              <span style={{ color: riskColor(botScores[row]?.bot_likelihood ?? -1), fontWeight: 700 }}>
+                                {(botScores[row]?.bot_likelihood ?? -1) >= 0 ? `${((botScores[row]?.bot_likelihood || 0) * 100).toFixed(0)}%` : 'N/A'}
                               </span>
                             </td>
                           );

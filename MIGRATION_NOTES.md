@@ -42,14 +42,24 @@ All layers are connected through the following data flow:
 
 ## 3. MODE Configuration
 
-The system supports two operating modes via the `MODE` environment variable:
+The system supports three operating modes via the `MODE` environment variable:
 
-### `MODE=fixture` (Default)
-- NLP Engine reads from `fixtures/sample_posts.json`, writes to `fixtures/sample_classified_output.json`
+### `MODE=fixture`
+- API Gateway loads `fixtures/mock_data.json` into the DataStore
+- **All posts are marked `is_synthetic: true`** and display a "SIMULATED" badge in the UI
+- NLP Engine reads from `fixtures/sample_posts.json`
 - Network Service returns fixture bot scores and clusters
-- API Gateway serves fixture data from `fixtures/mock_data.json`
 - **No Kafka, Redis, PostgreSQL, or Elasticsearch required**
 - Suitable for standalone demo and UI development
+
+### `MODE=offline` (Default for `run_offline.sh`)
+- DataStore **starts empty** — NO fixture data loaded
+- Background poller fetches real data from YouTube API every 60s (Gujarat-focused)
+- Twitter API is excluded from background polling (Free tier limitation)
+- Live Fetch panel allows manual keyword queries for real YouTube data
+- Facebook scraper fallback activates when META_ACCESS_TOKEN is absent
+- NLP Engine runs zero-shot classification via Sarvam AI / Groq
+- **No Docker infrastructure required** — all services run natively
 
 ### `MODE=kafka`
 - Ingestion connectors push to Kafka `raw-posts` topic
@@ -88,6 +98,18 @@ The Network Service runs independently and is accessed via REST API:
 - robots.txt compliance via `urllib.robotparser`
 - Per-domain rate limiting (1 req/sec + jitter)
 
+### 5.5 Meta Scraper Fallback (Phase D)
+- When `META_ACCESS_TOKEN` is absent, the system automatically attempts public Facebook page scraping
+- Uses mobile user-agent for best-effort text extraction from `m.facebook.com`
+- Instagram scraping is unreliable (requires login for most content)
+- All scraped posts are marked `source: 'facebook_scraper'` and `is_synthetic: false`
+
+### 5.6 Data Integrity (Phase D)
+- `is_synthetic` field added to post schema — all fixture posts are marked `true`
+- PostCard and WatchlistManager display "SIMULATED" badges for synthetic posts
+- Silent mock-data generation on API errors was removed entirely
+- Twitter background polling disabled (Free tier limitation documented)
+
 ## 6. Docker Networking
 
 All services use the default Docker Compose network. Service discovery:
@@ -103,3 +125,5 @@ The system is designed to degrade gracefully:
 - If Kafka is down → NLP Engine runs in fixture mode
 - If Redis is down → Ingestion skips dedup (logs warning)
 - If PostgreSQL is down → Watchlist falls back to default entries
+- If Twitter API is Free tier → Background poller excludes Twitter, logs clear error
+- If Meta Graph API unavailable → Falls back to public page scraper

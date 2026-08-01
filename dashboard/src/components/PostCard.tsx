@@ -1,4 +1,4 @@
-import { Heart, Share2, MessageCircle, MapPin, ExternalLink } from 'lucide-react';
+import { Heart, Share2, MessageCircle, MapPin, ExternalLink, FlaskConical } from 'lucide-react';
 
 interface PostCardProps {
   post: any;
@@ -12,9 +12,10 @@ export default function PostCard({ post, selectable, selected, onSelect }: PostC
   const badgeClass = `badge badge-${cat.toLowerCase()}`;
   const conf = post.classification.confidence;
   const confClass = conf >= 0.9 ? 'confidence-high' : conf >= 0.7 ? 'confidence-medium' : 'confidence-low';
+  const isSynthetic = post.is_synthetic === true || post.source === 'mock_live' || post.source === 'fixture';
 
   return (
-    <div className="glass-card post-card">
+    <div className="glass-card post-card" style={isSynthetic ? { borderLeft: '3px solid #f59e0b', opacity: 0.85 } : undefined}>
       <div className="post-card-header">
         <div className="post-card-meta">
           {selectable && (
@@ -34,7 +35,21 @@ export default function PostCard({ post, selectable, selected, onSelect }: PostC
             {new Date(post.timestamp).toLocaleString()}
           </span>
         </div>
-        <span className={badgeClass}>{cat}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {isSynthetic && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              padding: '2px 8px', fontSize: 10, fontWeight: 800,
+              borderRadius: 4, letterSpacing: '0.5px',
+              background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
+              border: '1px solid rgba(245,158,11,0.3)',
+              textTransform: 'uppercase',
+            }}>
+              <FlaskConical size={10} /> SIMULATED
+            </span>
+          )}
+          <span className={badgeClass}>{cat}</span>
+        </div>
       </div>
 
       <div style={{ position: 'relative' }}>

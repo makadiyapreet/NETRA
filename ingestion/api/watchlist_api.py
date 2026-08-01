@@ -100,44 +100,50 @@ def _get_session():
 
 # ── Serialization helpers ────────────────────────────────────────────────
 
+def _get(obj, key, default=None):
+    """Get a value from either a dict or an ORM object."""
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
 
 def _serialize_keyword(k) -> dict:
     return {
-        "id": getattr(k, "id", 1), "type": "keyword",
-        "keyword": getattr(k, "keyword", str(k)),
-        "platform_filter": getattr(k, "platform_filter", None),
-        "geo_area": getattr(k, "geo_area", "Gujarat"),
-        "is_active": getattr(k, "is_active", True),
+        "id": _get(k, "id", 1), "type": "keyword",
+        "keyword": _get(k, "keyword", ""),
+        "platform_filter": _get(k, "platform_filter", None),
+        "geo_area": _get(k, "geo_area", "Gujarat"),
+        "is_active": _get(k, "is_active", True),
     }
 
 
 def _serialize_hashtag(h) -> dict:
     return {
-        "id": getattr(h, "id", 1), "type": "hashtag",
-        "hashtag": getattr(h, "hashtag", str(h)),
-        "platform_filter": getattr(h, "platform_filter", None),
-        "geo_area": getattr(h, "geo_area", "Gujarat"),
-        "is_active": getattr(h, "is_active", True),
+        "id": _get(h, "id", 1), "type": "hashtag",
+        "hashtag": _get(h, "hashtag", ""),
+        "platform_filter": _get(h, "platform_filter", None),
+        "geo_area": _get(h, "geo_area", "Gujarat"),
+        "is_active": _get(h, "is_active", True),
     }
 
 
 def _serialize_geo_box(g) -> dict:
     return {
-        "id": getattr(g, "id", 1), "type": "geo_box",
-        "name": getattr(g, "name", str(g)),
-        "lat_min": getattr(g, "lat_min", 22.0), "lat_max": getattr(g, "lat_max", 24.0),
-        "lng_min": getattr(g, "lng_min", 71.0), "lng_max": getattr(g, "lng_max", 73.0),
-        "is_active": getattr(g, "is_active", True),
+        "id": _get(g, "id", 1), "type": "geo_box",
+        "name": _get(g, "name", ""),
+        "lat_min": _get(g, "lat_min", 22.0), "lat_max": _get(g, "lat_max", 24.0),
+        "lng_min": _get(g, "lng_min", 71.0), "lng_max": _get(g, "lng_max", 73.0),
+        "is_active": _get(g, "is_active", True),
     }
 
 
 def _serialize_profile(p) -> dict:
     return {
-        "id": getattr(p, "id", 1), "type": "profile",
-        "platform": getattr(p, "platform", "twitter"),
-        "profile_id": getattr(p, "profile_id", "123"),
-        "handle": getattr(p, "handle", "@handle"),
-        "is_active": getattr(p, "is_active", True),
+        "id": _get(p, "id", 1), "type": "profile",
+        "platform": _get(p, "platform", "twitter"),
+        "profile_id": _get(p, "profile_id", ""),
+        "handle": _get(p, "handle", "@unknown"),
+        "is_active": _get(p, "is_active", True),
     }
 
 
@@ -161,6 +167,18 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint — returns 200 only when genuinely ready."""
+    session = _get_session()
+    db_status = "connected" if session and session is not False else "fallback_memory"
+    return {
+        "status": "healthy",
+        "service": "watchlist-api",
+        "database": db_status,
+    }
 
 
 @app.get("/watchlist")

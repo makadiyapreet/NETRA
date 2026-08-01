@@ -21,8 +21,8 @@ class NLPConfig:
     """Immutable configuration for the NLP Engine."""
 
     # --- Mode ---
-    mode: Literal["fixture", "kafka"] = field(
-        default_factory=lambda: os.getenv("MODE", "kafka")  # type: ignore[arg-type]
+    mode: Literal["fixture", "kafka", "offline"] = field(
+        default_factory=lambda: os.getenv("MODE", "offline")  # type: ignore[arg-type]
     )
 
     # --- Kafka ---

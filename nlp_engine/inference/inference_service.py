@@ -159,6 +159,7 @@ def _init_kafka():
     config = _get_config()
 
     if config.mode != "kafka":
+        logger.info(f"Skipping Kafka producer (mode={config.mode})")
         return
 
     try:
@@ -375,6 +376,7 @@ async def _kafka_consumer_loop():
     config = _get_config()
 
     if config.mode != "kafka":
+        logger.info(f"Skipping Kafka consumer (mode={config.mode})")
         return
 
     try:

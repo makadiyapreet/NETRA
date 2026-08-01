@@ -306,6 +306,45 @@ async def get_cluster(cluster_id: str):
     )
 
 
+@app.get("/clusters")
+async def list_clusters():
+    """
+    List all coordination clusters.
+
+    Queries Neo4j for clusters identified by Louvain community detection.
+    Returns empty list if Neo4j is unavailable (graceful degradation).
+    """
+    try:
+        driver = _get_driver()
+        with driver.session() as session:
+            records = session.run(
+                """
+                MATCH (c:Cluster)
+                OPTIONAL MATCH (a:Account)-[:MEMBER_OF]->(c)
+                WITH c, collect(a.account_id) AS accounts
+                RETURN c.cluster_id AS cluster_id,
+                       c.coordination_score AS coordination_score,
+                       c.size AS size,
+                       accounts
+                ORDER BY c.coordination_score DESC
+                LIMIT 50
+                """
+            )
+            clusters = []
+            for rec in records:
+                clusters.append({
+                    "cluster_id": rec["cluster_id"],
+                    "coordination_score": rec["coordination_score"] or 0.0,
+                    "accounts": rec["accounts"] or [],
+                    "graph_edges": [],
+                })
+            return clusters
+    except Exception as e:
+        logger.warning(f"Neo4j unavailable for /clusters: {e}")
+        # Return empty list — the API Gateway will fall back to DataStore heuristics
+        return []
+
+
 # ── Entry Point ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -314,3 +353,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     config = _get_config()
     uvicorn.run(app, host=config.host, port=config.port)
+

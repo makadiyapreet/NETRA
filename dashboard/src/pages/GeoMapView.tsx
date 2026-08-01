@@ -163,7 +163,12 @@ export default function GeoMapView() {
       
       const res = await fetch(`/api/geo/hierarchy?${params.toString()}`);
       const data = await res.json();
-      setNodes(data.nodes || []);
+      const newNodes = data.nodes || [];
+      // Only update state if data actually changed — prevents map flicker on silent refreshes
+      setNodes(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(newNodes)) return prev;
+        return newNodes;
+      });
     } catch (err) {
       console.error('Failed to fetch hierarchy:', err);
     } finally {
@@ -212,7 +217,7 @@ export default function GeoMapView() {
 
   // Fetch individual posts when drilled into a city
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (drillLevel === 'city' && selectedCity) {
       const fetchCityPosts = async (silent = false) => {
         if (!silent) setLoading(true);

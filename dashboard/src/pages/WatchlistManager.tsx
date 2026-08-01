@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { List, Plus, Trash2, Search, Hash, MapPin, User, Globe, Eye, AlertTriangle, MessageSquare, ThumbsUp, Share2, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { List, Plus, Trash2, Search, Hash, MapPin, User, Globe, Eye, AlertTriangle, MessageSquare, ThumbsUp, Share2, ExternalLink, FlaskConical, RefreshCw, WifiOff } from 'lucide-react';
 
 interface WatchlistManagerProps {
   role: 'Analyst' | 'Admin';
@@ -56,27 +56,62 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
   const [formLngMin, setFormLngMin] = useState('');
   const [formLngMax, setFormLngMax] = useState('');
 
+  // Service status
+  const [serviceError, setServiceError] = useState<string | null>(null);
+  const matchRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     fetchWatchlist();
+    return () => {
+      if (matchRefreshRef.current) clearInterval(matchRefreshRef.current);
+    };
   }, []);
 
+  // Auto-refresh matched posts every 15s when a keyword is selected
+  useEffect(() => {
+    if (matchRefreshRef.current) clearInterval(matchRefreshRef.current);
+    if (matchKeyword) {
+      matchRefreshRef.current = setInterval(() => {
+        fetchMatches(matchKeyword, true);
+      }, 15000);
+    }
+    return () => {
+      if (matchRefreshRef.current) clearInterval(matchRefreshRef.current);
+    };
+  }, [matchKeyword]);
+
   async function fetchWatchlist() {
+    setLoading(true);
     try {
       const res = await fetch('/api/watchlist', {
         headers: { 'X-User-Role': role },
       });
+      if (!res.ok) {
+        // Backend returned an error (e.g. 503 = upstream watchlist API down)
+        let errorMsg = `Watchlist service returned ${res.status}`;
+        try {
+          const errBody = await res.json();
+          errorMsg = errBody.message || errBody.error || errorMsg;
+        } catch (_) { /* response wasn't JSON */ }
+        setServiceError(errorMsg);
+        setData({ keywords: [], hashtags: [], geo_boxes: [], profiles: [] });
+        return;
+      }
       const d = await res.json();
       setData(d);
+      setServiceError(null);
     } catch (err) {
       console.error('Failed to fetch watchlist:', err);
+      setServiceError('Cannot connect to the API gateway');
+      setData({ keywords: [], hashtags: [], geo_boxes: [], profiles: [] });
     } finally {
       setLoading(false);
     }
   }
 
-  async function fetchMatches(keyword: string) {
+  async function fetchMatches(keyword: string, silent = false) {
     if (!keyword.trim()) return;
-    setMatchLoading(true);
+    if (!silent) setMatchLoading(true);
     setMatchKeyword(keyword);
     try {
       const res = await fetch(`/api/watchlist/matches/${encodeURIComponent(keyword)}`);
@@ -85,10 +120,12 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
       setMatchTotal(d.total || 0);
     } catch (err) {
       console.error('Failed to fetch matches:', err);
-      setMatchedPosts([]);
-      setMatchTotal(0);
+      if (!silent) {
+        setMatchedPosts([]);
+        setMatchTotal(0);
+      }
     } finally {
-      setMatchLoading(false);
+      if (!silent) setMatchLoading(false);
     }
   }
 
@@ -238,6 +275,19 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
           </p>
         </div>
       </div>
+
+      {/* Service Error Banner */}
+      {serviceError && (
+        <div className="glass-card" style={{ padding: '12px 18px', marginBottom: 16, borderLeft: '3px solid #f59e0b', background: 'rgba(245,158,11,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <WifiOff size={16} style={{ color: '#f59e0b' }} />
+            <span style={{ fontWeight: 700, fontSize: 13, color: '#f59e0b' }}>Watchlist Service Offline</span>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>
+            {serviceError}
+          </p>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="stats-row">
@@ -508,6 +558,9 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
               }}>
                 {matchTotal} match{matchTotal !== 1 ? 'es' : ''}
               </span>
+              <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <RefreshCw size={10} /> Auto-refreshing
+              </span>
             </div>
 
             {matchLoading ? (
@@ -520,11 +573,13 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
-                {matchedPosts.map((post) => (
+                {matchedPosts.map((post: any) => {
+                  const isSynthetic = post.is_synthetic === true || post.source === 'mock_live' || post.source === 'fixture';
+                  return (
                   <div
                     key={post.post_id}
                     className="glass-card"
-                    style={{ padding: 14, transition: 'all 0.2s ease' }}
+                    style={{ padding: 14, transition: 'all 0.2s ease', ...(isSynthetic ? { borderLeft: '3px solid #f59e0b', opacity: 0.85 } : {}) }}
                   >
                     {/* Post Header */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -554,21 +609,35 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
                         </div>
                       </div>
 
-                      {/* Threat Badge */}
-                      <span style={{
-                        padding: '3px 8px',
-                        fontSize: 9,
-                        fontWeight: 800,
-                        borderRadius: 4,
-                        background: `${threatColor(post.classification.threat_category)}15`,
-                        color: threatColor(post.classification.threat_category),
-                        border: `1px solid ${threatColor(post.classification.threat_category)}33`,
-                        letterSpacing: '0.3px',
-                        textTransform: 'uppercase',
-                        flexShrink: 0,
-                      }}>
-                        {post.classification.threat_category === 'IncitementToViolence' ? 'INCITEMENT' : post.classification.threat_category}
-                      </span>
+                      {/* Threat Badge + Synthetic Badge */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                        {isSynthetic && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 2,
+                            padding: '2px 6px', fontSize: 8, fontWeight: 800,
+                            borderRadius: 4, letterSpacing: '0.5px',
+                            background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
+                            border: '1px solid rgba(245,158,11,0.3)',
+                            textTransform: 'uppercase',
+                          }}>
+                            <FlaskConical size={8} /> SIM
+                          </span>
+                        )}
+                        <span style={{
+                          padding: '3px 8px',
+                          fontSize: 9,
+                          fontWeight: 800,
+                          borderRadius: 4,
+                          background: `${threatColor(post.classification.threat_category)}15`,
+                          color: threatColor(post.classification.threat_category),
+                          border: `1px solid ${threatColor(post.classification.threat_category)}33`,
+                          letterSpacing: '0.3px',
+                          textTransform: 'uppercase',
+                          flexShrink: 0,
+                        }}>
+                          {post.classification.threat_category === 'IncitementToViolence' ? 'INCITEMENT' : post.classification.threat_category}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Post Text */}
@@ -588,7 +657,7 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
                     {/* Keywords */}
                     {post.classification.keywords?.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                        {post.classification.keywords.map((kw, i) => (
+                        {post.classification.keywords.map((kw: string, i: number) => (
                           <span key={i} style={{
                             padding: '2px 7px',
                             fontSize: 10,
@@ -623,8 +692,18 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
                         </span>
                       </div>
                     </div>
+
+                    {/* Post URL link */}
+                    {post.post_url && (
+                      <div style={{ marginTop: 6 }}>
+                        <a href={post.post_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}>
+                          <ExternalLink size={11} /> View on {post.platform || 'Platform'}
+                        </a>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

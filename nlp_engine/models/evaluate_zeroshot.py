@@ -4,6 +4,9 @@ import logging
 from pathlib import Path
 from collections import defaultdict
 from nlp_engine.models.zeroshot_classifier import ZeroShotClassifier
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

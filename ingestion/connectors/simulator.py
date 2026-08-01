@@ -178,6 +178,7 @@ class SimulatorConnector(BaseConnector):
                         following_count=random.randint(10, 5000),
                         post_count=random.randint(1, 50000),
                     ),
+                    is_synthetic=True,
                 )
             )
 

@@ -38,13 +38,17 @@ const navItems = [
 
 export default function Sidebar({ currentPage, onNavigate, collapsed, onToggle, role, onSearch }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
-  const [dataMode, setDataMode] = useState<'kafka' | 'fixture' | 'unknown'>('unknown');
+  const [dataMode, setDataMode] = useState<'kafka' | 'offline' | 'fixture' | 'unknown'>('unknown');
   const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => {
     fetch('/api/health')
       .then((r) => r.json())
-      .then((d) => setDataMode(d.mode === 'kafka' ? 'kafka' : 'fixture'))
+      .then((d) => {
+        if (d.mode === 'kafka') setDataMode('kafka');
+        else if (d.mode === 'offline') setDataMode('offline');
+        else setDataMode('fixture');
+      })
       .catch(() => setDataMode('unknown'));
   }, []);
 
@@ -66,9 +70,9 @@ export default function Sidebar({ currentPage, onNavigate, collapsed, onToggle, 
 
       {/* Data Mode Badge */}
       {dataMode !== 'unknown' && (
-        <div className={`data-mode-badge ${dataMode === 'kafka' ? 'live' : 'fixture'}`}>
+        <div className={`data-mode-badge ${dataMode === 'kafka' ? 'live' : dataMode === 'offline' ? 'live' : 'fixture'}`}>
           <span className="data-mode-dot" />
-          <span>{dataMode === 'kafka' ? 'Live Data' : 'Fixture Data'}</span>
+          <span>{dataMode === 'kafka' ? 'Live Data (Kafka)' : dataMode === 'offline' ? 'Live APIs (No Docker)' : 'Fixture Data'}</span>
         </div>
       )}
 

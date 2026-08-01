@@ -291,10 +291,10 @@ export async function initKafkaConsumer(
   io: SocketIOServer,
   esClient?: ElasticsearchClient
 ): Promise<KafkaConsumerService | null> {
-  const mode = process.env.MODE || 'kafka';
+  const mode = process.env.MODE || 'offline';
 
   if (mode !== 'kafka') {
-    console.log('📦 MODE=fixture — Kafka consumer not started (using fixture data)');
+    console.log(`📦 MODE=${mode} — Kafka consumer not started (no Docker infrastructure needed)`);
     return null;
   }
 

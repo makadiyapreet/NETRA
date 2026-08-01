@@ -205,5 +205,17 @@
 | **Tier 4** | 19. Guided Walkthrough Tour | ✅ | `dashboard/src/components/GuidedTour.tsx` |
 | **Tier 4** | 20. Consolidated System Health Page | ✅ | `dashboard/src/pages/SystemHealth.tsx`, `routes/health-metrics.ts` |
 | **Feature**| 21. Cascading Geo Filter (Country→State→City)| ✅ | `post_schema.json`, `routes/geo.ts`, `FilterBar.tsx` |
-| **Feature**| 22. API Quota Mock Fallback Generator | ✅ | `api-gateway/src/routes/live-fetch.ts` |
+| **Feature**| 22. ~~API Quota Mock Fallback Generator~~ | ❌ REMOVED | Was in `live-fetch.ts` — **removed for data integrity**. Silent mock generation disguised fake data as real. |
 | **Feature**| 23. Live Data UI Auto-Refresh Timer | ✅ | `dashboard/src/pages/Dashboard.tsx`, `GeoMapView.tsx` |
+
+### Phase D — Honesty & Real-Data Pass (July 2026)
+
+| Tier | Objective | Status | Implementation File(s) |
+|------|-----------|--------|------------------------|
+| **Critical** | Remove silent mock-data generator | ✅ | `live-fetch.ts` (mock generator deleted), `post_schema.json` (`is_synthetic` field added) |
+| **Critical** | Badge all synthetic data | ✅ | `PostCard.tsx`, `WatchlistManager.tsx`, `data-store.ts` (fixture posts marked `is_synthetic: true`) |
+| **Critical** | Diagnose Twitter zero results | ✅ | `live-fetch.ts` (tier-specific error messages), `server.ts` (background poller excludes Twitter) |
+| **High** | Meta scraper fallback | ✅ | `live-fetch.ts` (`fetchFacebookPublicPosts` function) |
+| **High** | Fix watchlist data flow | ✅ | `watchlist.ts` (removed fixture fallback, returns 503), `WatchlistManager.tsx` (error banner, auto-refresh) |
+| **High** | No-Docker real-data mode | ✅ | `data-store.ts` (`MODE=offline` starts empty), `server.ts` (YouTube-only poller), `.env` (updated docs) |
+

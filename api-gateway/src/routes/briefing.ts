@@ -46,10 +46,13 @@ router.get('/today', async (req: Request, res: Response) => {
       .map(([cat, count]) => `  • ${cat}: ${count} alert${count !== 1 ? 's' : ''}`)
       .join('\n');
 
+    const allPosts = dataStore?.getPosts?.({ size: 1 }) || { total: 0 };
+    const totalPostsProcessed = allPosts.total;
+
     const briefing = `NETRA Daily Threat Briefing — ${dateStr}\n\n` +
-      `In the past 24 hours, NETRA processed ${alerts.length * 50} social media posts across 4 platforms. ` +
+      `In the past 24 hours, NETRA processed ${totalPostsProcessed} social media posts across active platforms. ` +
       `${alerts.length} threat alerts were generated, with ${highSev} classified as high-severity (SEV ≥ 4).\n\n` +
-      `Threat category breakdown:\n${categoryLines}\n\n` +
+      `Threat category breakdown:\n${categoryLines || '  • No alerts generated yet.'}\n\n` +
       (highSev >= 1 
         ? '⚡ RECOMMENDATION: High-severity threat(s) detected. Review and acknowledge within 1 hour.'
         : '✅ RECOMMENDATION: Threat levels within normal parameters. Continue routine monitoring.');

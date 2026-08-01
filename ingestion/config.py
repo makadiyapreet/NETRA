@@ -35,7 +35,7 @@ class Settings:
 
     # ── Simulator ────────────────────────────────────────────────────────
     simulator_mode: bool = field(
-        default_factory=lambda: os.getenv("SIMULATOR_MODE", "true").lower() == "true"
+        default_factory=lambda: os.getenv("SIMULATOR_MODE", "false").lower() == "true"
     )
 
     # ── Twitter / X ──────────────────────────────────────────────────────

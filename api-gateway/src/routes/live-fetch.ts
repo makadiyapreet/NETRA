@@ -10,7 +10,6 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { FIXTURE_WATCHLIST } from './watchlist';
 
 const router = Router();
 
@@ -25,47 +24,19 @@ async function fetchTwitterPosts(query: string, bearerToken: string): Promise<an
     });
 
     if (!resp.ok) {
-      if (resp.status === 403 || resp.status === 429 || resp.status === 402) {
-        console.error(`[LIVE] Twitter API error ${resp.status} (Quota/Tier/Credits). Returning 10 diverse mock posts as requested.`);
-        const platforms = ['Twitter', 'YouTube', 'Facebook', 'Instagram', 'Telegram'];
-        const mediaUrls = [
-          'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?w=500&q=80',
-          'https://images.unsplash.com/photo-1541872703874-fa6d4648b2eb?w=500&q=80',
-          'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          'https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8?w=500&q=80',
-          '' // Text only
-        ];
-        const threatTexts = [
-          `BREAKING: Urgent updates regarding the severe clashes occurring near the main square in ${query}. #Alert #News`,
-          `Avoid traveling to ${query} today. Protestors have blocked all major highways. Police using tear gas.`,
-          `SHOCKING VIDEO: Unverified claims of a bomb threat at the central station in ${query}. Stay safe!`,
-          `Secret government documents leaked showing controversial plans for ${query}. This will cause riots!`,
-          `Massive political rally turning violent in the heart of ${query}. Weapons seen in the crowd.`,
-        ];
-        
-        return Array.from({ length: 10 }).map((_, i) => {
-          const platform = platforms[i % platforms.length];
-          const media = mediaUrls[i % mediaUrls.length];
-          const text = threatTexts[i % threatTexts.length];
-          const isVideo = media.includes('youtube.com');
-          return {
-            post_id: `STATIC-MOCK-POST-${i}`,
-            platform: platform,
-            author_handle: `@mock_${platform.toLowerCase()}_user${i}`,
-            text: text,
-            timestamp: new Date().toISOString(), // Keep timestamp fresh so it stays at the top
-            detected_language: 'en',
-            geo_location: extractCity(query),
-            engagement_counts: { likes: Math.floor(Math.random() * 5000), shares: Math.floor(Math.random() * 800), comments: Math.floor(Math.random() * 200) },
-            media_type: isVideo ? 'video' : (media ? 'image' : 'text'),
-            media_url: media,
-            source: 'mock_live',
-            post_url: isVideo ? media : `https://${platform.toLowerCase()}.com/post/mock${i}`,
-          };
-        });
+      const errBody = await resp.text();
+      
+      if (resp.status === 403) {
+        console.error(`[LIVE] Twitter API 403 Forbidden. This typically means your API key is on the FREE tier which does NOT include search access. Upgrade to Basic ($100/mo) or higher at developer.twitter.com. Raw response: ${errBody}`);
+      } else if (resp.status === 429) {
+        console.error(`[LIVE] Twitter API 429 Rate Limited. You've exceeded your tier's rate limit. Wait and retry. Raw response: ${errBody}`);
+      } else if (resp.status === 402) {
+        console.error(`[LIVE] Twitter API 402 Payment Required. Your API subscription needs payment. Raw response: ${errBody}`);
+      } else {
+        console.error(`[LIVE] Twitter API error ${resp.status}: ${errBody}`);
       }
-      const err = await resp.text();
-      console.error(`[LIVE] Twitter API error ${resp.status}: ${err}`);
+      
+      // HONESTY: Return empty array — NEVER generate fake posts as fallback
       return [];
     }
 
@@ -97,12 +68,13 @@ async function fetchTwitterPosts(query: string, bearerToken: string): Promise<an
         },
         media_type: 'text',
         source: 'twitter_live',
+        is_synthetic: false,
         post_url: `https://twitter.com/${username}/status/${tweet.id}`,
       };
     });
   } catch (err: any) {
     console.error('[LIVE] Twitter fetch error:', err.message || err);
-    throw err; // Re-throw to be caught by the route handler
+    return []; // Return empty, never fake
   }
 }
 
@@ -233,10 +205,79 @@ async function fetchYouTubePosts(query: string, apiKey: string): Promise<any[]> 
         post_url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
         thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || '',
         source: 'youtube_live',
+        is_synthetic: false,
       };
     });
   } catch (err) {
     console.error('[LIVE] YouTube fetch error:', err);
+    return [];
+  }
+}
+
+
+// ── Facebook Public Page Scraper (Fallback when no Graph API) ────
+async function fetchFacebookPublicPosts(query: string): Promise<any[]> {
+  // Facebook public page scraping is limited — most content requires auth.
+  // This attempts to scrape public page search results via mobile site.
+  // NOTE: This is a best-effort fallback. Facebook aggressively blocks scrapers.
+  try {
+    // Search for public pages/posts related to the query
+    const searchUrl = `https://m.facebook.com/search/posts/?q=${encodeURIComponent(query)}`;
+    const resp = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      },
+    });
+
+    if (!resp.ok) {
+      console.warn(`[LIVE] Facebook scraper got HTTP ${resp.status} — Facebook likely requires login for search`);
+      return [];
+    }
+
+    const html = await resp.text();
+    
+    // Extract visible text content from the HTML (basic extraction)
+    // Facebook's HTML is heavily obfuscated, so this is best-effort
+    const posts: any[] = [];
+    
+    // Look for story/post text in the HTML
+    const storyRegex = /<div[^>]*data-ft[^>]*>([\s\S]*?)<\/div>/gi;
+    const textRegex = />([^<]{30,500})</g;
+    
+    let match;
+    let count = 0;
+    while ((match = textRegex.exec(html)) !== null && count < 5) {
+      const text = match[1].trim();
+      // Filter out HTML artifacts and navigation text
+      if (text.length > 30 && !text.includes('<!') && !text.includes('function') && !text.startsWith('var ')) {
+        const geo = extractCity(query);
+        posts.push({
+          post_id: `FB-SCRAPE-${Date.now()}-${count}`,
+          platform: 'Facebook',
+          author_handle: 'Public Page',
+          text: text.substring(0, 500),
+          timestamp: new Date().toISOString(),
+          detected_language: 'en',
+          geo_location: geo,
+          engagement_counts: { likes: 0, shares: 0, comments: 0 },
+          media_type: 'text',
+          source: 'facebook_scraper',
+          is_synthetic: false,
+          post_url: `https://www.facebook.com/search/posts/?q=${encodeURIComponent(query)}`,
+        });
+        count++;
+      }
+    }
+    
+    if (posts.length === 0) {
+      console.warn('[LIVE] Facebook scraper: No public posts extracted — Facebook likely requires login');
+    }
+    
+    return posts;
+  } catch (err: any) {
+    console.error('[LIVE] Facebook scraper error:', err.message || err);
     return [];
   }
 }
@@ -248,7 +289,20 @@ async function classifyPost(post: any): Promise<any> {
     const resp = await fetch(`${NLP_SERVICE_URL}/classify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: post.text, language: post.detected_language }),
+      body: JSON.stringify({
+        post_id: post.post_id || post.id || `post-${Date.now()}`,
+        platform: post.platform || 'unknown',
+        author_id: post.author_id || post.author_handle || 'unknown',
+        author_handle: post.author_handle || 'unknown',
+        text: post.text || '',
+        language_hint: post.detected_language || post.language || null,
+        created_at: post.timestamp || post.created_at || new Date().toISOString(),
+        geo_location: post.geo_location || null,
+        hashtags: post.hashtags || [],
+        mentions: post.mentions || [],
+        media_urls: post.media_urls || [],
+        engagement_counts: post.engagement_counts || { likes: 0, shares: 0, comments: 0 },
+      }),
     });
 
     if (resp.ok) {
@@ -306,9 +360,18 @@ router.get('/status', (_req: Request, res: Response) => {
   const metaToken = process.env.META_ACCESS_TOKEN;
 
   res.json({
-    twitter: { configured: !!twitterToken, label: 'Twitter/X API v2' },
+    twitter: { 
+      configured: !!twitterToken, 
+      label: 'Twitter/X API v2',
+      warning: twitterToken ? 'Free tier may not support search — check developer.twitter.com for your tier' : 'No TWITTER_BEARER_TOKEN set',
+    },
     youtube: { configured: !!youtubeKey, label: 'YouTube Data API v3' },
-    meta: { configured: !!metaToken, label: 'Meta Graph API' },
+    meta: { 
+      configured: !!metaToken, 
+      label: metaToken ? 'Meta Graph API' : 'Meta (Scraper Fallback)',
+      fallback: !metaToken ? 'scraper' : 'api',
+      warning: !metaToken ? 'Graph API token not set — using public page scraper as fallback' : undefined,
+    },
     nlp_service: NLP_SERVICE_URL,
   });
 });
@@ -343,7 +406,7 @@ router.post('/fetch', async (req: Request, res: Response) => {
       rawPosts.push(...tweets);
       console.log(`[LIVE] Twitter: ${tweets.length} posts fetched`);
     } catch (err: any) {
-      errors.push(err.message || 'Twitter Fetch Error');
+      errors.push(`Twitter: ${err.message || 'Fetch Error'}`);
     }
   } else if (targetPlatforms.includes('twitter') && !twitterToken) {
     errors.push('Twitter: No TWITTER_BEARER_TOKEN configured');
@@ -356,6 +419,25 @@ router.post('/fetch', async (req: Request, res: Response) => {
     console.log(`[LIVE] YouTube: ${videos.length} posts fetched`);
   } else if (targetPlatforms.includes('youtube') && !youtubeKey) {
     errors.push('YouTube: No YOUTUBE_API_KEY configured');
+  }
+
+  // Meta (Facebook/Instagram) — Graph API or Scraper Fallback
+  const metaToken = process.env.META_ACCESS_TOKEN;
+  if (targetPlatforms.includes('facebook') || targetPlatforms.includes('meta')) {
+    if (metaToken) {
+      // Would use Graph API here (not implemented in live-fetch since it requires page IDs)
+      console.log('[LIVE] Meta Graph API configured but live-fetch uses watchlist profiles — use watchlist for Meta API fetching');
+    } else {
+      // Scraper fallback for public Facebook pages
+      console.log('[LIVE] Meta: No Graph API token — using public page scraper fallback');
+      try {
+        const fbPosts = await fetchFacebookPublicPosts(query);
+        rawPosts.push(...fbPosts);
+        console.log(`[LIVE] Facebook Scraper: ${fbPosts.length} posts extracted`);
+      } catch (err: any) {
+        errors.push(`Facebook Scraper: ${err.message || 'Scrape failed'}`);
+      }
+    }
   }
 
 
@@ -377,6 +459,18 @@ router.post('/fetch', async (req: Request, res: Response) => {
       
       // 2. Generate and Add Alerts
       const newAlerts: any[] = [];
+      // Fetch live watchlist from upstream API for matching
+      const WATCHLIST_API_BASE = `http://${process.env.WATCHLIST_API_HOST || 'localhost'}:${process.env.WATCHLIST_API_PORT || '8002'}`;
+      let watchlistData: { keywords: any[]; hashtags: any[]; profiles: any[] } = { keywords: [], hashtags: [], profiles: [] };
+      try {
+        const wlRes = await fetch(`${WATCHLIST_API_BASE}/watchlist`);
+        if (wlRes.ok) {
+          watchlistData = await wlRes.json() as { keywords: any[]; hashtags: any[]; profiles: any[] };
+        }
+      } catch {
+        console.warn('[LIVE] Watchlist API unavailable — skipping watchlist matching');
+      }
+
       newPosts.forEach(p => {
         // Check for Watchlist matches first
         const textLower = p.text.toLowerCase();
@@ -384,7 +478,7 @@ router.post('/fetch', async (req: Request, res: Response) => {
         let matchedWatchlist = false;
         let matchReason = '';
 
-        for (const kw of FIXTURE_WATCHLIST.keywords) {
+        for (const kw of (watchlistData.keywords || [])) {
           if (kw.is_active && textLower.includes(kw.keyword.toLowerCase())) {
             matchedWatchlist = true;
             matchReason = `Matched Watchlist Keyword: "${kw.keyword}"`;
@@ -392,7 +486,7 @@ router.post('/fetch', async (req: Request, res: Response) => {
           }
         }
         if (!matchedWatchlist) {
-          for (const ht of FIXTURE_WATCHLIST.hashtags) {
+          for (const ht of (watchlistData.hashtags || [])) {
             if (ht.is_active && textLower.includes(ht.hashtag.toLowerCase())) {
               matchedWatchlist = true;
               matchReason = `Matched Watchlist Hashtag: "${ht.hashtag}"`;
@@ -401,7 +495,7 @@ router.post('/fetch', async (req: Request, res: Response) => {
           }
         }
         if (!matchedWatchlist) {
-          for (const prof of FIXTURE_WATCHLIST.profiles) {
+          for (const prof of (watchlistData.profiles || [])) {
             if (prof.is_active && handleLower.includes(prof.handle.toLowerCase())) {
               matchedWatchlist = true;
               matchReason = `Matched Watchlist Profile: "@${prof.handle}"`;

@@ -95,6 +95,7 @@ class PostMessage(BaseModel):
     media_urls: list[str] = Field(default_factory=list)
     engagement_counts: EngagementCounts = Field(default_factory=EngagementCounts)
     raw_payload: RawPayload = Field(default_factory=RawPayload)
+    is_synthetic: bool = Field(default=False, description="If true, this post was generated synthetically")
 
     # ── serialization helpers ────────────────────────────────────────────
 
