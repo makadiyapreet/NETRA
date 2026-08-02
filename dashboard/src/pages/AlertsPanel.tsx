@@ -220,6 +220,7 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
           <option value="">All Platforms</option>
           <option value="Twitter">Twitter / X</option>
           <option value="YouTube">YouTube</option>
+          <option value="Telegram">Telegram</option>
           <option value="Instagram">Instagram</option>
           <option value="Facebook">Facebook</option>
         </select>

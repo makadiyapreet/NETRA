@@ -19,6 +19,7 @@ import notificationsRouter from './routes/notifications';
 import geoRouter from './routes/geo';
 import healthMetricsRouter from './routes/health-metrics';
 import liveFetchRouter from './routes/live-fetch';
+import modelEvalRouter from './routes/model-eval';
 
 dotenv.config({ path: '../.env' });
 
@@ -54,6 +55,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/geo', geoRouter);
 app.use('/api/health-metrics', healthMetricsRouter);
 app.use('/api/live', liveFetchRouter);
+app.use('/api/model', modelEvalRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

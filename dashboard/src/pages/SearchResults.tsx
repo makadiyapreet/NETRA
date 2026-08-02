@@ -33,7 +33,7 @@ export default function SearchResults({ query, onNavigate }: SearchResultsProps)
         await fetch('/api/live/fetch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: q, platforms: ['twitter', 'youtube'] }),
+          body: JSON.stringify({ query: q, platforms: ['youtube', 'twitter', 'telegram'] }),
         });
       } catch (err) {
         console.warn('Live fetch failed, falling back to local data only:', err);

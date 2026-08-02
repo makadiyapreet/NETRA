@@ -141,7 +141,7 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
       await fetch('/api/live/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: keyword, platforms: ['youtube'] }),
+        body: JSON.stringify({ query: keyword, platforms: ['youtube', 'telegram', 'twitter', 'facebook'] }),
       });
       // Wait a moment for DataStore to update, then re-search
       await new Promise(r => setTimeout(r, 500));
@@ -371,6 +371,7 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
                   <option value="facebook">Facebook</option>
                   <option value="instagram">Instagram</option>
                   <option value="youtube">YouTube</option>
+                  <option value="telegram">Telegram</option>
                 </select>
               </div>
               <div className="filter-group">
@@ -617,13 +618,13 @@ export default function WatchlistManager({ role }: WatchlistManagerProps) {
                   }}
                 >
                   {liveFetching ? (
-                    <><RefreshCw size={12} className="animate-spin" /> Fetching from YouTube...</>
+                    <><RefreshCw size={12} className="animate-spin" /> Fetching from all platforms...</>
                   ) : (
-                    <><Search size={12} /> Fetch Live from YouTube</>
+                    <><Search size={12} /> Fetch Live Data</>
                   )}
                 </button>
                 <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 10 }}>
-                  This will search YouTube for "{matchKeyword}" and add matching posts to the data store.
+                  This will search all platforms (YouTube, Telegram, Twitter, Facebook) for "{matchKeyword}" and add matching posts to the data store.
                 </p>
               </div>
             ) : (

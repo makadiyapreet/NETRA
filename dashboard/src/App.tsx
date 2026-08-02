@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider } from './ThemeContext';
 import Sidebar from './components/Sidebar';
 import RoleSwitcher from './components/RoleSwitcher';
@@ -15,6 +15,7 @@ import SearchResults from './pages/SearchResults';
 import WatchlistManager from './pages/WatchlistManager';
 import ModelPerformance from './pages/ModelPerformance';
 import SystemHealth from './pages/SystemHealth';
+import SplashScreen from './components/SplashScreen';
 
 type Page =
   | 'dashboard'
@@ -39,6 +40,8 @@ export default function App() {
   const [userName, setUserName] = useState('');
   const [showTour, setShowTour] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+  const [splashMode, setSplashMode] = useState<'login' | 'logout' | null>(null);
+  const [pendingLogin, setPendingLogin] = useState<{ token: string; user: { id: number; email: string; role: 'Admin' | 'Analyst'; displayName: string } } | null>(null);
 
   // Check for existing JWT on mount
   useEffect(() => {
@@ -63,17 +66,28 @@ export default function App() {
   }, []);
 
   const handleLogin = (token: string, user: { id: number; email: string; role: 'Admin' | 'Analyst'; displayName: string }) => {
-    setRole(user.role);
-    setUserName(user.displayName || user.email);
-    setIsAuthenticated(true);
+    setPendingLogin({ token, user });
+    setSplashMode('login');
   };
 
+  const completeSplash = useCallback(() => {
+    if (splashMode === 'login' && pendingLogin) {
+      setRole(pendingLogin.user.role);
+      setUserName(pendingLogin.user.displayName || pendingLogin.user.email);
+      setIsAuthenticated(true);
+      setPendingLogin(null);
+    } else if (splashMode === 'logout') {
+      localStorage.removeItem('netra-token');
+      localStorage.removeItem('netra-user');
+      setIsAuthenticated(false);
+      setRole('Analyst');
+      setUserName('');
+    }
+    setSplashMode(null);
+  }, [splashMode, pendingLogin]);
+
   const handleLogout = () => {
-    localStorage.removeItem('netra-token');
-    localStorage.removeItem('netra-user');
-    setIsAuthenticated(false);
-    setRole('Analyst');
-    setUserName('');
+    setSplashMode('logout');
   };
 
   const pageTitle: Record<Page, string> = {
@@ -108,6 +122,19 @@ export default function App() {
       case 'health': return <SystemHealth />;
     }
   };
+
+  // Show splash screen during login/logout transitions
+  if (splashMode) {
+    return (
+      <ThemeProvider>
+        <SplashScreen
+          mode={splashMode}
+          onComplete={completeSplash}
+          userName={splashMode === 'login' && pendingLogin ? pendingLogin.user.displayName : userName}
+        />
+      </ThemeProvider>
+    );
+  }
 
   // Show login/signup screen if not authenticated
   if (!isAuthenticated) {

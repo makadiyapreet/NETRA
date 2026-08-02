@@ -4,7 +4,7 @@ const router = Router();
 
 /**
  * GET /api/trends
- * Returns trend-spike fixture data for charting.
+ * Returns real DataStore trend spikes computed from ingested posts.
  */
 router.get('/', (req: Request, res: Response) => {
   const dataStore = req.app.locals.dataStore;

@@ -25,6 +25,7 @@ export default function ModelPerformance() {
   const [activeModel, setActiveModel] = useState('zeroshot');
   const [loading, setLoading] = useState(true);
   const [evalReport, setEvalReport] = useState<any>(null);
+  const [evalStatus, setEvalStatus] = useState<'loading' | 'real' | 'not_run' | 'benchmark'>('loading');
 
   useEffect(() => {
     loadMetrics();
@@ -33,21 +34,38 @@ export default function ModelPerformance() {
   async function loadMetrics() {
     setLoading(true);
 
-    // Try to load real evaluation results from the API
+    // For Zero-Shot: try to load REAL evaluation results from the eval API
     if (activeModel === 'zeroshot') {
       try {
-        const res = await fetch('/api/health/data-mode');
+        const res = await fetch('/api/model/eval-results');
         if (res.ok) {
-          const status = await res.json();
-          setEvalReport(status);
+          const data = await res.json();
+          if (data.status === 'completed') {
+            // Real eval data exists — use it
+            setMetrics({
+              model: 'zeroshot',
+              accuracy: data.accuracy,
+              precision: data.precision,
+              recall: data.recall,
+              f1: data.f1,
+              confusion_matrix: data.confusion_matrix || [],
+              source: 'live_eval',
+            });
+            setEvalReport(data);
+            setEvalStatus('real');
+            setLoading(false);
+            return;
+          }
         }
-      } catch (_) { /* API not available */ }
+      } catch (_) { /* eval API not available */ }
+
+      // No real eval — show benchmark target with honest "pending" label
+      setEvalStatus('not_run');
+    } else {
+      setEvalStatus('benchmark');
     }
 
-    // These are BENCHMARK TARGETS — not measured results from a trained model.
-    // NETRA currently runs Zero-Shot LLM Prompting (Groq LLaMA 3.1 8B).
-    // Fine-tuned IndicBERT/MuRIL/mBERT checkpoints are pending GPU training.
-    // See: RUNBOOK_FOR_GPU_TRAINING.md
+    // Benchmark targets for models pending GPU training
     const benchmarkMetrics: Record<string, { accuracy: number; precision: number; recall: number; f1: number }> = {
       zeroshot: { accuracy: 0.78, precision: 0.76, recall: 0.74, f1: 0.75 },
       indicbert: { accuracy: 0.86, precision: 0.85, recall: 0.84, f1: 0.845 },
@@ -57,14 +75,13 @@ export default function ModelPerformance() {
 
     const m = benchmarkMetrics[activeModel] || benchmarkMetrics['zeroshot'];
 
-    const mockMetrics: ModelMetrics = {
+    setMetrics({
       model: activeModel,
       ...m,
       confusion_matrix: generateBenchmarkConfusion(activeModel),
-      source: activeModel === 'zeroshot' ? 'live_eval' : 'benchmark_target',
-    };
+      source: 'benchmark_target',
+    });
 
-    setMetrics(mockMetrics);
     setLoading(false);
   }
 
@@ -134,12 +151,65 @@ export default function ModelPerformance() {
   if (loading) return <div className="page-loading">Loading model metrics...</div>;
 
   const info = MODEL_INFO[activeModel] || MODEL_INFO['zeroshot'];
-  const isBenchmark = activeModel !== 'zeroshot';
+  const isBenchmark = evalStatus === 'benchmark' || evalStatus === 'not_run';
 
   return (
     <div className="model-performance-page">
-      {/* Honesty Banner for benchmark targets */}
-      {isBenchmark && (
+      {/* Real Eval Results Banner */}
+      {evalStatus === 'real' && evalReport && (
+        <div className="glass-card" style={{
+          padding: '14px 20px',
+          marginBottom: 20,
+          borderLeft: '4px solid #22c55e',
+          background: 'rgba(34,197,94,0.06)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12,
+        }}>
+          <FlaskConical size={18} style={{ color: '#22c55e', flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#22c55e', marginBottom: 4 }}>
+              ✅ Real Evaluation — Measured Metrics
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+              These metrics are from a <strong>real evaluation run</strong> on {evalReport.total_samples} test samples
+              using {evalReport.model_version}. 
+              {evalReport.provider_stats && ` Sarvam: ${evalReport.provider_stats.sarvam || 0}, Groq: ${evalReport.provider_stats.groq || 0} posts.`}
+              {evalReport.baseline_note && <><br/><em style={{ color: 'var(--text-muted)', fontSize: 11 }}>Note: {evalReport.baseline_note}</em></>}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Evaluation Not Run Banner */}
+      {evalStatus === 'not_run' && (
+        <div className="glass-card" style={{
+          padding: '14px 20px',
+          marginBottom: 20,
+          borderLeft: '4px solid #f59e0b',
+          background: 'rgba(245,158,11,0.06)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12,
+        }}>
+          <AlertTriangle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#f59e0b', marginBottom: 4 }}>
+              ⏳ Evaluation Pending — Showing Benchmark Targets
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+              The numbers below are <strong>estimated benchmark targets</strong>, not measured results. 
+              To generate real metrics, run:<br/>
+              <code style={{ background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>
+                python -m nlp_engine.models.evaluate_zeroshot
+              </code>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Benchmark Targets Banner (fine-tuned models) */}
+      {evalStatus === 'benchmark' && (
         <div className="glass-card" style={{
           padding: '14px 20px',
           marginBottom: 20,

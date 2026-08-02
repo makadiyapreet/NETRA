@@ -535,3 +535,321 @@ html,body,#root{height:100%;width:100%;font-family:var(--font-family);background
 
 /* ── Platform Colors ───────────────────────────────────────── */
 .platform-twitter{color:#1da1f2}.platform-youtube{color:#ff0000}.platform-instagram{color:#e4405f}.platform-facebook{color:#1877f2}.platform-telegram{color:#0088cc}.platform-reddit{color:#ff4500}
+
+/* ══════════════════════════════════════════════════════════════
+   SPLASH SCREEN — Cinematic Login / Logout Transition
+   ══════════════════════════════════════════════════════════════ */
+
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #0a0e17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: splashFadeIn 0.4s ease-out;
+  overflow: hidden;
+}
+.splash-overlay.splash-exit {
+  animation: splashFadeOut 0.5s ease-in forwards;
+}
+
+/* Background Grid */
+.splash-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: splashGridMove 8s linear infinite;
+}
+
+/* Radar */
+.splash-radar {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  opacity: 0.15;
+}
+.splash-radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0%, transparent 70%, rgba(0,212,255,0.4) 100%);
+  animation: splashRadarSweep 3s linear infinite;
+}
+.splash-radar-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.2);
+}
+.splash-radar-ring-1 { inset: 0; }
+.splash-radar-ring-2 { inset: 25%; }
+.splash-radar-ring-3 { inset: 50%; }
+
+/* Particles */
+.splash-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.splash-particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(0,212,255,0.6);
+  border-radius: 50%;
+  animation: splashParticleFloat linear infinite;
+  box-shadow: 0 0 6px rgba(0,212,255,0.4);
+}
+
+/* Center content */
+.splash-center {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.splash-center-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Eye Logo */
+.splash-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.splash-eye {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.splash-eye-outer {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,212,255,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: splashEyePulse 2s ease-in-out infinite;
+}
+.splash-eye-iris {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #00d4ff 0%, #0066aa 60%, #003366 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: splashIrisScan 3s ease-in-out infinite;
+}
+.splash-eye-pupil {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0a0e17;
+  box-shadow: 0 0 8px rgba(0,212,255,0.8);
+}
+.splash-eye-glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,212,255,0.15) 0%, transparent 70%);
+  animation: splashEyeGlow 2s ease-in-out infinite;
+}
+
+/* Logo Text */
+.splash-logo-text {
+  display: flex;
+  gap: 6px;
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: 12px;
+  font-family: 'Inter', 'SF Mono', monospace;
+}
+.splash-logo-text span {
+  opacity: 0;
+  animation: splashLetterAppear 0.3s ease forwards;
+  text-shadow: 0 0 20px rgba(0,212,255,0.6), 0 0 40px rgba(0,212,255,0.3);
+}
+.splash-logo-n { color: #00d4ff; animation-delay: 0.1s; }
+.splash-logo-e { color: #00bfff; animation-delay: 0.2s; }
+.splash-logo-t { color: #00aaee; animation-delay: 0.3s; }
+.splash-logo-r { color: #0099dd; animation-delay: 0.4s; }
+.splash-logo-a { color: #0088cc; animation-delay: 0.5s; }
+
+.splash-tagline {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(0,212,255,0.5);
+  font-weight: 600;
+  text-align: center;
+  animation: splashFadeIn 0.8s ease 0.6s both;
+}
+
+/* Typewriter Lines */
+.splash-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 12px;
+  min-width: 360px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.splash-lines-visible { opacity: 1; }
+
+.splash-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(0,212,255,0.7);
+  opacity: 0;
+  animation: splashLineAppear 0.3s ease forwards;
+}
+.splash-line-prefix {
+  color: #22c55e;
+  font-weight: 700;
+}
+.splash-line-text {
+  letter-spacing: 1.5px;
+}
+.splash-line-cursor {
+  opacity: 0;
+  animation: splashCursorBlink 0.6s step-end infinite;
+  animation-delay: inherit;
+  color: #00d4ff;
+}
+
+/* Progress Bar */
+.splash-progress-container {
+  width: 360px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.splash-progress-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.splash-progress-track {
+  width: 100%;
+  height: 3px;
+  background: rgba(0,212,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.splash-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff, #0088cc, #00d4ff);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  transition: width 1.6s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: splashProgressShimmer 1.5s linear infinite;
+  box-shadow: 0 0 12px rgba(0,212,255,0.5);
+}
+.splash-progress-label {
+  margin-top: 8px;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: rgba(0,212,255,0.35);
+  font-weight: 700;
+  text-align: center;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* Corner Decorations */
+.splash-corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-color: rgba(0,212,255,0.2);
+  border-style: solid;
+  border-width: 0;
+}
+.splash-corner-tl { top: 24px; left: 24px; border-top-width: 2px; border-left-width: 2px; }
+.splash-corner-tr { top: 24px; right: 24px; border-top-width: 2px; border-right-width: 2px; }
+.splash-corner-bl { bottom: 24px; left: 24px; border-bottom-width: 2px; border-left-width: 2px; }
+.splash-corner-br { bottom: 24px; right: 24px; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* Classification Banner */
+.splash-classification {
+  position: absolute;
+  bottom: 32px;
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: rgba(0,212,255,0.25);
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  animation: splashFadeIn 1s ease 0.8s both;
+}
+
+/* ── Splash Keyframes ──────────────────────────────────────── */
+
+@keyframes splashFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes splashFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes splashGridMove {
+  from { transform: translate(0, 0); }
+  to { transform: translate(40px, 40px); }
+}
+@keyframes splashRadarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes splashParticleFloat {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(-120px) scale(0.3); opacity: 0; }
+}
+@keyframes splashEyePulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(0,212,255,0.3); }
+  50%      { box-shadow: 0 0 30px rgba(0,212,255,0.6), 0 0 60px rgba(0,212,255,0.2); }
+}
+@keyframes splashIrisScan {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.1); }
+}
+@keyframes splashEyeGlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.2); }
+}
+@keyframes splashLetterAppear {
+  from { opacity: 0; transform: translateY(-15px) scale(0.8); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes splashLineAppear {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes splashCursorBlink {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes splashProgressShimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}

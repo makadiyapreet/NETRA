@@ -83,9 +83,10 @@ router.get('/', async (req: Request, res: Response) => {
         note: 'Real-time metrics from DataStore',
       },
       rate_limits: {
-        twitter: { status: 'FREE_TIER_NO_SEARCH', note: 'Search endpoint requires Basic tier ($100/mo)' },
+        twitter: { status: process.env.TWITTER_BEARER_TOKEN ? 'AUTHENTICATED_NO_SEARCH' : 'NO_TOKEN', note: 'Authenticated but search requires Basic tier ($100/mo)' },
         youtube: { status: process.env.YOUTUBE_API_KEY ? 'CONFIGURED' : 'NO_KEY' },
         meta: { status: process.env.META_ACCESS_TOKEN ? 'CONFIGURED' : 'SCRAPER_FALLBACK' },
+        telegram: { status: process.env.TELEGRAM_BOT_TOKEN ? 'CONFIGURED' : 'NO_TOKEN', note: 'Get a token from @BotFather on Telegram' },
       },
     };
 

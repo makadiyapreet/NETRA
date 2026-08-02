@@ -51,9 +51,8 @@ NETRA supports three execution modes, designed for different infrastructure scen
 |---|---|---|
 | **YouTube** | ✅ Working | YouTube Data API v3 fetches real videos. Background poller active. |
 | **Twitter/X** | ⚠️ Tier Limited | X Free tier API does NOT include search access (since 2023). Requires Basic tier ($100/mo). Code is correct; upgrade needed. |
-| **Facebook** | 🔄 Scraper Fallback | No Meta Graph API token → automatic public page scraper fallback. Best-effort extraction. |
-| **Instagram** | ❌ Requires Auth | Instagram requires login for most content. Scraping unreliable. |
-| **Telegram** | ✅ Connector Built | Bot API connector for public channels. Requires `TELEGRAM_BOT_TOKEN`. |
+| **Meta (FB/IG)** | ✅ Working | Meta Graph API authenticated. Configured via `META_ACCESS_TOKEN`. |
+| **Telegram** | ✅ Working | Scrapes 18 verified public Indian news channels (HT, Zee, Indian Express, DNA India, Scroll.in, The Quint, India TV, CNN-News18, LiveMint, TOI, Republic Bharat, NavbharatTimes, Divya Bhaskar, Dainik Bhaskar, Punjab Kesari, Al Jazeera, ABC News) + Bot API for private channels. |
 
 > **API Keys Required:** Configure your social media API credentials in `.env`. See [Environment Configuration](#-environment-configuration) below.
 
@@ -145,6 +144,7 @@ NETRA supports three execution modes, designed for different infrastructure scen
 
 ### 5. 🛡️ Security, RBAC & Legal Audit Trail
 * **SOC Login & Signup UI:** Military-grade terminal-card authentication pages with HUD corner brackets, animated grid background, scanning-line effect, and "Verifying Clearance" loading states.
+* **Cinematic Splash Transitions:** NETRA-branded splash screen animations on login (radar sweep, glowing eye logo, typewriter terminal lines, progress bar — 2.8s) and logout (secure session termination — 2.2s).
 * **JWT Authentication:** Stateful user management backed by PostgreSQL (`users` table) with role separation (**Analyst** vs. **Admin**). In-memory fallback user store for offline/no-Docker development.
 * **Self-Service Signup:** Agency/jurisdiction dropdown (Ahmedabad Crime Branch, Surat Cyber Cell, ATS, SIB, NIA, CBI), password strength meter, and terms acknowledgment.
 * **Audit Logging:** All watchlist mutations and login attempts are logged with timestamps, IP addresses, and user roles.
@@ -152,9 +152,9 @@ NETRA supports three execution modes, designed for different infrastructure scen
 * **Police FIR & I4C Exporter:** 1-click legal draft generator pre-filling IPC Sections 153A, 295A, 505, and IT Act Section 66F.
 
 ### 6. 📊 12-Page Command Center Dashboard
-0. **Login / Signup:** SOC terminal-card authentication with HUD brackets, animated grid, agency selection.
+0. **Login / Signup:** SOC terminal-card authentication with HUD brackets, animated grid, agency selection, cinematic splash transitions.
 1. **Threat Dashboard:** Real-time threat feed with live filters, daily AI briefings, threat velocity indicators.
-2. **Alert Center:** Socket.IO real-time alert dispatch with SEV 1–5 badges and analyst acknowledgment workflows.
+2. **Alert Center:** Socket.IO real-time alert dispatch with SEV 1–5 badges, analyst acknowledgment workflows, and platform filter (Twitter, YouTube, Telegram, Instagram, Facebook).
 3. **Network Graph:** Interactive `react-force-graph-2d` visualization of bot clusters and coordination nodes.
 4. **Geo Intelligence:** Leaflet map with 6 tile types (Dark, Light, Satellite, Terrain, Street, Voyager) and cascading Country → State → City filters.
 5. **Trend Monitor:** Recharts keyword frequency spike timeseries and rolling z-score monitors.
@@ -189,7 +189,7 @@ This starts 5 services:
 4. **API Gateway** (port 4000) — REST API + Socket.IO + live data fetching
 5. **Dashboard** (port 5173) — React command center UI
 
-The dashboard starts **empty** in `MODE=offline` and fills with real YouTube data within ~60 seconds via the background poller.
+The dashboard starts **empty** in `MODE=offline` and fills with real YouTube + Telegram data within ~60 seconds via the background poller. Live fetch from the Dashboard UI queries all 4 platforms (YouTube, Telegram, Twitter, Facebook) simultaneously.
 
 Or manually start each service:
 
@@ -219,7 +219,7 @@ cd dashboard && npm run dev &
 > **Authentication:**
 > The system uses JWT-backed PostgreSQL authentication. When PostgreSQL is unavailable, an in-memory user store is used as fallback.
 >
-> **Seed Credentials:**
+> **Seed Credentials (⚠️ Development/Demo Only — change before production):**
 > - **Admin:** `admin@netra.gov.in` / `netra2026`
 > - **Analyst:** `analyst@netra.gov.in` / `analyst2026`
 >

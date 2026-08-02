@@ -87,7 +87,7 @@ export default function Dashboard({ role }: DashboardProps) {
       const res = await fetch(`${API}/live/fetch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: liveQuery.trim() }),
+        body: JSON.stringify({ query: liveQuery.trim(), platforms: ['twitter', 'youtube', 'telegram', 'facebook'] }),
       });
       const data = await res.json();
       setLiveResult({ total: data.total, errors: data.errors || [] });
@@ -140,7 +140,7 @@ export default function Dashboard({ role }: DashboardProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Radio size={16} style={{ color: '#22c55e' }} />
           <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Live Data Fetch</span>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>— Pull real posts from Twitter/X & YouTube APIs</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>— Pull real posts from Twitter/X, YouTube, Telegram & Facebook</span>
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>

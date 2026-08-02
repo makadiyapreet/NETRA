@@ -348,6 +348,189 @@ async function classifyPost(post: any): Promise<any> {
   };
 }
 
+// ── Telegram Fetcher (Public Channel Scraping + Bot API) ────────
+// Strategy:
+// 1. Scrape public channels via t.me/s/<channel> (no auth needed)
+// 2. Also check getUpdates for channels the bot is in
+// This ensures we always return data even without adding bot to channels.
+
+const TELEGRAM_PUBLIC_CHANNELS = [
+  // ── Indian English News (verified active, 20+ posts each) ──
+  'hindustantimes',    // Hindustan Times
+  'zeenews',           // Zee News
+  'indianexpress',     // Indian Express (lowercase handle)
+  'IndianExpress',     // Indian Express (capitalized handle)
+  'dnaindia',          // DNA India
+  'scroll_in',         // Scroll.in
+  'TheQuint',          // The Quint
+  'IndiaTV',           // India TV
+  'CNNNews18',         // CNN-News18
+  'livemint',          // LiveMint (Financial/Politics)
+  'TimesOfIndia',      // Times of India
+
+  // ── Indian Hindi / Regional News ──
+  'republic_bharat',   // Republic Bharat (Hindi)
+  'NavbharatTimes',    // Navbharat Times (Hindi)
+  'divyabhaskar',      // Divya Bhaskar (Gujarati — key for Gujarat monitoring)
+  'DainikBhaskar',     // Dainik Bhaskar (Hindi)
+  'PunjabKesari',      // Punjab Kesari (Hindi/Punjabi)
+
+  // ── International (covers India) ──
+  'AlJazeera',         // Al Jazeera — international perspective
+  'ABCNews',           // ABC News — international coverage
+];
+
+async function scrapeTelegramChannel(channel: string, query: string): Promise<any[]> {
+  try {
+    const url = `https://t.me/s/${channel}`;
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+      },
+    });
+
+    if (!resp.ok) return [];
+
+    const html = await resp.text();
+    const posts: any[] = [];
+
+    // Extract messages from Telegram's public preview HTML
+    // Each message is in a <div class="tgme_widget_message_wrap">
+    const messageRegex = /tgme_widget_message_text[^>]*>([\s\S]*?)<\/div>/gi;
+    const dateRegex = /datetime="([^"]+)"/g;
+    const linkRegex = /data-post="([^"]+)"/g;
+
+    // Get all message texts
+    const texts: string[] = [];
+    let match;
+    while ((match = messageRegex.exec(html)) !== null) {
+      // Strip HTML tags from message content
+      const cleanText = match[1]
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (cleanText.length > 50) texts.push(cleanText);  // Min 50 chars to filter out spam/meta posts
+    }
+
+    // Get all dates
+    const dates: string[] = [];
+    while ((match = dateRegex.exec(html)) !== null) {
+      dates.push(match[1]);
+    }
+
+    // Get all post links
+    const links: string[] = [];
+    while ((match = linkRegex.exec(html)) !== null) {
+      links.push(match[1]);
+    }
+
+    const queryLower = query.toLowerCase();
+    const queryTerms = queryLower.split(/\s+/).filter(t => t.length > 2);
+    const geo = extractCity(query);
+
+    for (let i = 0; i < texts.length; i++) {
+      const text = texts[i];
+      const textLower = text.toLowerCase();
+
+      // Filter: at least one query term must appear in the text
+      const matches = queryTerms.length === 0 || queryTerms.some(term => textLower.includes(term));
+      if (!matches) continue;
+
+      const postLink = links[i] || `${channel}/${i}`;
+      const dateStr = dates[i] || new Date().toISOString();
+
+      posts.push({
+        post_id: `TG-PUB-${channel}-${i}-${Date.now()}`,
+        platform: 'Telegram',
+        author_handle: `@${channel}`,
+        author_id: channel,
+        text: text.substring(0, 800),
+        timestamp: dateStr,
+        detected_language: 'unknown',
+        geo_location: geo,
+        engagement_counts: { likes: 0, shares: 0, comments: 0 },
+        media_type: 'text',
+        post_url: `https://t.me/${postLink}`,
+        source: 'telegram_public',
+        is_synthetic: false,
+      });
+    }
+
+    return posts;
+  } catch (err) {
+    return [];
+  }
+}
+
+async function fetchTelegramPosts(query: string, botToken: string): Promise<any[]> {
+  const allPosts: any[] = [];
+
+  // Strategy 1: Scrape public channels for matching posts (cap 5 per channel for diversity)
+  const scrapePromises = TELEGRAM_PUBLIC_CHANNELS.map(ch => scrapeTelegramChannel(ch, query));
+  const scrapeResults = await Promise.allSettled(scrapePromises);
+  for (const result of scrapeResults) {
+    if (result.status === 'fulfilled') {
+      allPosts.push(...result.value.slice(0, 5)); // Max 5 per channel for source diversity
+    }
+  }
+
+  // Strategy 2: Also check Bot API getUpdates (for channels bot is added to)
+  try {
+    const url = `https://api.telegram.org/bot${botToken}/getUpdates?limit=50&allowed_updates=["channel_post","message"]`;
+    const resp = await fetch(url);
+    if (resp.ok) {
+      const data = await resp.json() as any;
+      if (data.ok && data.result) {
+        const queryLower = query.toLowerCase();
+        const queryTerms = queryLower.split(/\s+/);
+
+        for (const update of data.result) {
+          const msg = update.channel_post || update.message;
+          if (!msg || !msg.text) continue;
+
+          const textLower = msg.text.toLowerCase();
+          const matches = queryTerms.some((term: string) => textLower.includes(term));
+          if (!matches && queryTerms.length > 0 && queryLower.trim() !== '') continue;
+
+          const chatTitle = msg.chat?.title || msg.from?.first_name || 'Unknown';
+          const chatUsername = msg.chat?.username || msg.from?.username || '';
+          const geo = extractCity(query);
+
+          allPosts.push({
+            post_id: `TG-BOT-${msg.message_id}-${msg.chat?.id || 0}-${Date.now()}`,
+            platform: 'Telegram',
+            author_handle: chatUsername ? `@${chatUsername}` : chatTitle,
+            author_id: String(msg.from?.id || msg.chat?.id || 0),
+            text: msg.text,
+            timestamp: new Date((msg.date || 0) * 1000).toISOString(),
+            detected_language: 'unknown',
+            geo_location: geo,
+            engagement_counts: { likes: 0, shares: 0, comments: 0 },
+            media_type: msg.photo ? 'image' : msg.video ? 'video' : 'text',
+            post_url: chatUsername ? `https://t.me/${chatUsername}/${msg.message_id}` : '',
+            source: 'telegram_bot',
+            is_synthetic: false,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[LIVE] Telegram Bot API getUpdates failed:', err);
+  }
+
+  console.log(`[LIVE] Telegram: ${allPosts.length} posts (${TELEGRAM_PUBLIC_CHANNELS.length} public channels + bot)`);
+  return allPosts.slice(0, 40);
+}
+
+
+
 // ── Routes ─────────────────────────────────────────────────────
 
 /**
@@ -358,6 +541,7 @@ router.get('/status', (_req: Request, res: Response) => {
   const twitterToken = process.env.TWITTER_BEARER_TOKEN;
   const youtubeKey = process.env.YOUTUBE_API_KEY;
   const metaToken = process.env.META_ACCESS_TOKEN;
+  const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
 
   res.json({
     twitter: { 
@@ -372,6 +556,12 @@ router.get('/status', (_req: Request, res: Response) => {
       fallback: !metaToken ? 'scraper' : 'api',
       warning: !metaToken ? 'Graph API token not set — using public page scraper as fallback' : undefined,
     },
+    telegram: {
+      configured: !!telegramToken,
+      label: 'Telegram Bot API',
+      warning: !telegramToken ? 'No TELEGRAM_BOT_TOKEN set — get one from @BotFather' : undefined,
+    },
+
     nlp_service: NLP_SERVICE_URL,
   });
 });
@@ -384,6 +574,7 @@ router.get('/status', (_req: Request, res: Response) => {
  */
 router.post('/fetch', async (req: Request, res: Response) => {
   const { query, platforms } = req.body;
+  const pipelineStartMs = Date.now();
 
   if (!query) {
     res.status(400).json({ error: 'Query is required' });
@@ -392,7 +583,7 @@ router.post('/fetch', async (req: Request, res: Response) => {
 
   const twitterToken = process.env.TWITTER_BEARER_TOKEN;
   const youtubeKey = process.env.YOUTUBE_API_KEY;
-  const targetPlatforms = platforms || ['twitter', 'youtube'];
+  const targetPlatforms = platforms || ['twitter', 'youtube', 'telegram', 'facebook'];
 
   console.log(`[LIVE] Fetching real data for query: "${query}" from ${targetPlatforms.join(', ')}`);
 
@@ -438,6 +629,20 @@ router.post('/fetch', async (req: Request, res: Response) => {
         errors.push(`Facebook Scraper: ${err.message || 'Scrape failed'}`);
       }
     }
+  }
+
+  // Fetch from Telegram (Bot API — reads channels the bot has access to)
+  const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (targetPlatforms.includes('telegram') && telegramToken) {
+    try {
+      const tgPosts = await fetchTelegramPosts(query, telegramToken);
+      rawPosts.push(...tgPosts);
+      console.log(`[LIVE] Telegram: ${tgPosts.length} posts fetched`);
+    } catch (err: any) {
+      errors.push(`Telegram: ${err.message || 'Fetch Error'}`);
+    }
+  } else if (targetPlatforms.includes('telegram') && !telegramToken) {
+    errors.push('Telegram: No TELEGRAM_BOT_TOKEN configured — get one from @BotFather');
   }
 
 
@@ -550,12 +755,21 @@ router.post('/fetch', async (req: Request, res: Response) => {
     }
   }
 
+  const pipelineTotalMs = Date.now() - pipelineStartMs;
+  const postsPerSecond = classifiedPosts.length > 0 ? (classifiedPosts.length / (pipelineTotalMs / 1000)).toFixed(2) : '0';
+  console.log(`[LIVE] Pipeline complete: ${classifiedPosts.length} posts in ${pipelineTotalMs}ms (${postsPerSecond} posts/sec)`);
+
   res.json({
     query,
     total: classifiedPosts.length,
     new_posts: classifiedPosts.length,
     errors,
     posts: classifiedPosts,
+    throughput: {
+      total_ms: pipelineTotalMs,
+      posts_count: classifiedPosts.length,
+      posts_per_second: parseFloat(postsPerSecond),
+    },
   });
 });
 

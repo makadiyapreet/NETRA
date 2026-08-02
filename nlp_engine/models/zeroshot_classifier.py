@@ -73,7 +73,7 @@ class ZeroShotClassifier:
         user_prompt = f"Detected Language: {language}\nPost Text: {text}"
         
         payload = {
-            "model": "sarvam-m4",
+            "model": "sarvam-105b",
             "messages": [
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": user_prompt}
