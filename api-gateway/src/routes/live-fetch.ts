@@ -10,6 +10,8 @@
  */
 
 import { Router, Request, Response } from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const router = Router();
 
@@ -325,7 +327,6 @@ async function classifyPost(post: any): Promise<any> {
   const text = post.text.toLowerCase();
   const dangerWords = ['kill', 'attack', 'destroy', 'riot', 'violence', 'hate', 'bomb', 'threat', 'हिंसा', 'मारो', 'हथियार', 'दंगा'];
   const fakeWords = ['fake', 'hoax', 'false', 'misleading', 'conspiracy', 'breaking', 'secret'];
-
   let category = 'Neutral';
   let confidence = 0.5;
 
@@ -350,113 +351,165 @@ async function classifyPost(post: any): Promise<any> {
 
 // ── Telegram Fetcher (Public Channel Scraping + Bot API) ────────
 // Strategy:
-// 1. Scrape public channels via t.me/s/<channel> (no auth needed)
-// 2. Also check getUpdates for channels the bot is in
-// This ensures we always return data even without adding bot to channels.
+// 1. Scrape public channels via t.me/s/<channel> from telegram_channels.json (no auth needed)
+// 2. Also check getUpdates for channels/chats the bot is added to
+// This ensures rich real-time data is always returned across dozens of channels.
 
-const TELEGRAM_PUBLIC_CHANNELS = [
-  // ── Indian English News (verified active, 20+ posts each) ──
-  'hindustantimes',    // Hindustan Times
-  'zeenews',           // Zee News
-  'indianexpress',     // Indian Express (lowercase handle)
-  'IndianExpress',     // Indian Express (capitalized handle)
-  'dnaindia',          // DNA India
-  'scroll_in',         // Scroll.in
-  'TheQuint',          // The Quint
-  'IndiaTV',           // India TV
-  'CNNNews18',         // CNN-News18
-  'livemint',          // LiveMint (Financial/Politics)
-  'TimesOfIndia',      // Times of India
+interface TelegramChannelInfo {
+  handle: string;
+  name: string;
+  category: string;
+  language: string;
+  region: string;
+  priority: number;
+}
 
-  // ── Indian Hindi / Regional News ──
-  'republic_bharat',   // Republic Bharat (Hindi)
-  'NavbharatTimes',    // Navbharat Times (Hindi)
-  'divyabhaskar',      // Divya Bhaskar (Gujarati — key for Gujarat monitoring)
-  'DainikBhaskar',     // Dainik Bhaskar (Hindi)
-  'PunjabKesari',      // Punjab Kesari (Hindi/Punjabi)
+let cachedTelegramChannels: TelegramChannelInfo[] = [];
 
-  // ── International (covers India) ──
-  'AlJazeera',         // Al Jazeera — international perspective
-  'ABCNews',           // ABC News — international coverage
-];
-
-async function scrapeTelegramChannel(channel: string, query: string): Promise<any[]> {
+function getTelegramChannels(): TelegramChannelInfo[] {
+  if (cachedTelegramChannels.length > 0) return cachedTelegramChannels;
   try {
-    const url = `https://t.me/s/${channel}`;
+    const candidatePaths = [
+      path.resolve(__dirname, '../data/telegram_channels.json'),
+      path.resolve(__dirname, '../../src/data/telegram_channels.json'),
+      path.resolve(process.cwd(), 'src/data/telegram_channels.json'),
+      path.resolve(process.cwd(), 'api-gateway/src/data/telegram_channels.json'),
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.channels) && parsed.channels.length > 0) {
+          cachedTelegramChannels = parsed.channels;
+          return cachedTelegramChannels;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[LIVE] Could not load telegram_channels.json, using fallback list:', err);
+  }
+
+  // Fallback defaults — VERIFIED channels with working public preview pages
+  return [
+    { handle: 'divyabhaskar', name: 'Divya Bhaskar Gujarat', category: 'regional_gujarat', language: 'gu', region: 'Gujarat', priority: 1 },
+    { handle: 'zeenews', name: 'Zee News National', category: 'national_hindi', language: 'hi', region: 'National', priority: 1 },
+    { handle: 'ndtv', name: 'NDTV News', category: 'national_english', language: 'en', region: 'National', priority: 1 },
+    { handle: 'IndianExpress', name: 'Indian Express', category: 'national_english', language: 'en', region: 'National', priority: 1 },
+    { handle: 'scroll_in', name: 'Scroll.in', category: 'national_english', language: 'en', region: 'National', priority: 1 },
+    { handle: 'livemint', name: 'LiveMint', category: 'finance_economic_crimes', language: 'en', region: 'National', priority: 1 },
+    { handle: 'thequint', name: 'The Quint', category: 'national_english', language: 'en', region: 'National', priority: 1 },
+    { handle: 'CNNnews18', name: 'CNN-News18', category: 'national_english', language: 'en', region: 'National', priority: 1 },
+    { handle: 'hindustantimes', name: 'Hindustan Times', category: 'national_english', language: 'en', region: 'National', priority: 1 },
+    { handle: 'BBCnewsHindi', name: 'BBC News Hindi', category: 'national_hindi', language: 'hi', region: 'National', priority: 1 },
+    { handle: 'ABPLive', name: 'ABP Live', category: 'national_hindi', language: 'hi', region: 'National', priority: 1 },
+    { handle: 'firstpost', name: 'Firstpost', category: 'national_english', language: 'en', region: 'National', priority: 2 },
+    { handle: 'ETMarkets', name: 'ET Markets', category: 'finance_economic_crimes', language: 'en', region: 'National', priority: 2 },
+    { handle: 'MIB_India', name: 'Ministry of I&B', category: 'government_policy', language: 'en', region: 'National', priority: 1 },
+  ];
+}
+
+async function scrapeTelegramChannel(channelInfo: TelegramChannelInfo | string, query: string): Promise<any[]> {
+  const handle = typeof channelInfo === 'string' ? channelInfo : channelInfo.handle;
+  const channelName = typeof channelInfo === 'string' ? channelInfo : channelInfo.name;
+  const channelRegion = typeof channelInfo === 'string' ? 'National' : channelInfo.region;
+
+  try {
+    const url = `https://t.me/s/${handle}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
     const resp = await fetch(url, {
+      signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8,gu;q=0.7',
       },
     });
+    clearTimeout(timeout);
 
     if (!resp.ok) return [];
 
     const html = await resp.text();
     const posts: any[] = [];
 
-    // Extract messages from Telegram's public preview HTML
-    // Each message is in a <div class="tgme_widget_message_wrap">
-    const messageRegex = /tgme_widget_message_text[^>]*>([\s\S]*?)<\/div>/gi;
-    const dateRegex = /datetime="([^"]+)"/g;
-    const linkRegex = /data-post="([^"]+)"/g;
+    // Split HTML by message wraps so each message's text, date, and link remain aligned
+    const messageBlocks = html.split(/class="tgme_widget_message_wrap/i);
+    if (messageBlocks.length <= 1) return [];
 
-    // Get all message texts
-    const texts: string[] = [];
-    let match;
-    while ((match = messageRegex.exec(html)) !== null) {
-      // Strip HTML tags from message content
-      const cleanText = match[1]
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/\s+/g, ' ')
-        .trim();
-      if (cleanText.length > 50) texts.push(cleanText);  // Min 50 chars to filter out spam/meta posts
-    }
+    const queryLower = query.toLowerCase().trim();
+    const queryTerms = queryLower.split(/\s+/).filter(t => t.length > 1);
+    const geo = extractCity(query) || (channelRegion === 'Gujarat' ? extractCity('Ahmedabad') : undefined);
 
-    // Get all dates
-    const dates: string[] = [];
-    while ((match = dateRegex.exec(html)) !== null) {
-      dates.push(match[1]);
-    }
+    for (let i = 1; i < messageBlocks.length; i++) {
+      const block = messageBlocks[i];
 
-    // Get all post links
-    const links: string[] = [];
-    while ((match = linkRegex.exec(html)) !== null) {
-      links.push(match[1]);
-    }
+      // Extract post link/ID
+      const postMatch = block.match(/data-post="([^"]+)"/i);
+      const postLink = postMatch ? postMatch[1] : `${handle}/${Date.now()}-${i}`;
+      const msgId = postLink.split('/')[1] || `${Date.now()}-${i}`;
 
-    const queryLower = query.toLowerCase();
-    const queryTerms = queryLower.split(/\s+/).filter(t => t.length > 2);
-    const geo = extractCity(query);
+      // Extract text content
+      const textMatch = block.match(/class="tgme_widget_message_text[^>]*>([\s\S]*?)<\/div>/i);
+      let text = '';
+      if (textMatch) {
+        text = textMatch[1]
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&nbsp;/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
 
-    for (let i = 0; i < texts.length; i++) {
-      const text = texts[i];
+      if (!text || text.length < 15) continue;
+
+      // Extract datetime
+      const dateMatch = block.match(/datetime="([^"]+)"/i);
+      const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString();
+
+      // Extract views
+      const viewsMatch = block.match(/class="tgme_widget_message_views">([^<]+)<\/span>/i);
+      let views = 0;
+      if (viewsMatch) {
+        const rawViews = viewsMatch[1].trim();
+        if (rawViews.endsWith('K') || rawViews.endsWith('k')) {
+          views = Math.round(parseFloat(rawViews) * 1000);
+        } else if (rawViews.endsWith('M') || rawViews.endsWith('m')) {
+          views = Math.round(parseFloat(rawViews) * 1000000);
+        } else {
+          views = parseInt(rawViews.replace(/,/g, ''), 10) || 0;
+        }
+      }
+
+      // Detect media type
+      const hasPhoto = block.includes('tgme_widget_message_photo');
+      const hasVideo = block.includes('tgme_widget_message_video');
+      const mediaType = hasVideo ? 'video' : hasPhoto ? 'image' : 'text';
+
+      // Match query terms
       const textLower = text.toLowerCase();
-
-      // Filter: at least one query term must appear in the text
-      const matches = queryTerms.length === 0 || queryTerms.some(term => textLower.includes(term));
-      if (!matches) continue;
-
-      const postLink = links[i] || `${channel}/${i}`;
-      const dateStr = dates[i] || new Date().toISOString();
+      const isMatch = queryTerms.length === 0 || queryTerms.some(term => textLower.includes(term));
+      if (queryTerms.length > 0 && !isMatch) {
+        continue;
+      }
 
       posts.push({
-        post_id: `TG-PUB-${channel}-${i}-${Date.now()}`,
+        post_id: `TG-PUB-${handle}-${msgId}-${Date.now()}`,
         platform: 'Telegram',
-        author_handle: `@${channel}`,
-        author_id: channel,
+        author_handle: `@${handle}`,
+        author_id: handle,
+        author_name: channelName,
         text: text.substring(0, 800),
         timestamp: dateStr,
         detected_language: 'unknown',
         geo_location: geo,
-        engagement_counts: { likes: 0, shares: 0, comments: 0 },
-        media_type: 'text',
+        engagement_counts: { likes: 0, shares: Math.round(views * 0.05), comments: 0, views },
+        media_type: mediaType,
         post_url: `https://t.me/${postLink}`,
         source: 'telegram_public',
         is_synthetic: false,
@@ -469,64 +522,122 @@ async function scrapeTelegramChannel(channel: string, query: string): Promise<an
   }
 }
 
-async function fetchTelegramPosts(query: string, botToken: string): Promise<any[]> {
-  const allPosts: any[] = [];
+let telegramRotationOffset = 0;
 
-  // Strategy 1: Scrape public channels for matching posts (cap 5 per channel for diversity)
-  const scrapePromises = TELEGRAM_PUBLIC_CHANNELS.map(ch => scrapeTelegramChannel(ch, query));
+async function fetchTelegramPosts(query: string, botToken?: string): Promise<any[]> {
+  const allPosts: any[] = [];
+  const allChannels = getTelegramChannels();
+
+  const queryLower = query.toLowerCase();
+  const isGujaratQuery = /gujarat|ahmedabad|surat|vadodara|rajkot|bhavnagar|gandhinagar|jamnagar|junagadh|anand|kutch/i.test(queryLower);
+  const isCyberQuery = /cyber|hack|scam|phish|breach|leak|fraud|otp|darkweb|malware|ransomware/i.test(queryLower);
+  const isPoliceQuery = /police|traffic|arrest|fir|crime|accident|emergency|patrol|ndrf|disaster|weather|flood|rain/i.test(queryLower);
+  const isDefenseQuery = /defense|defence|army|navy|airforce|military|border|missile|war|tactical|osint|geopolitics/i.test(queryLower);
+  const isFactCheckQuery = /fake|fact|hoax|rumor|claim|misleading|viral|check|debunk|busted/i.test(queryLower);
+  const isFinanceQuery = /market|stock|sebi|rbi|bank|crypto|bitcoin|finance|economy|rupee|tax|money/i.test(queryLower);
+  const isGlobalQuery = /world|international|global|war|russia|ukraine|israel|iran|china|us|un|biden|trump/i.test(queryLower);
+
+  const prioritized = allChannels.filter(c => {
+    if (isGujaratQuery && (c.category === 'regional_gujarat' || c.region === 'Gujarat')) return true;
+    if (isCyberQuery && c.category === 'cyber_crime_threat_intel') return true;
+    if (isPoliceQuery && c.category === 'police_emergency_disaster') return true;
+    if (isDefenseQuery && c.category === 'defense_security_osint') return true;
+    if (isFactCheckQuery && c.category === 'fact_check_disinformation') return true;
+    if (isFinanceQuery && c.category === 'finance_economic_crimes') return true;
+    if (isGlobalQuery && c.category === 'international_geopolitics') return true;
+    return false;
+  });
+
+  const remaining = allChannels.filter(c => !prioritized.includes(c));
+  const batchSize = Math.max(20, 35 - prioritized.length);
+  const rotatedSlice = remaining.slice(telegramRotationOffset, telegramRotationOffset + batchSize);
+  telegramRotationOffset = (telegramRotationOffset + batchSize) % (remaining.length || 1);
+
+  const targetChannels = [...prioritized, ...rotatedSlice].slice(0, 35);
+
+  // Strategy 1: Public Channel Scraping
+  const scrapePromises = targetChannels.map(ch => scrapeTelegramChannel(ch, query));
   const scrapeResults = await Promise.allSettled(scrapePromises);
   for (const result of scrapeResults) {
-    if (result.status === 'fulfilled') {
-      allPosts.push(...result.value.slice(0, 5)); // Max 5 per channel for source diversity
+    if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+      allPosts.push(...result.value.slice(0, 5));
     }
   }
 
-  // Strategy 2: Also check Bot API getUpdates (for channels bot is added to)
-  try {
-    const url = `https://api.telegram.org/bot${botToken}/getUpdates?limit=50&allowed_updates=["channel_post","message"]`;
-    const resp = await fetch(url);
-    if (resp.ok) {
-      const data = await resp.json() as any;
-      if (data.ok && data.result) {
-        const queryLower = query.toLowerCase();
-        const queryTerms = queryLower.split(/\s+/);
-
-        for (const update of data.result) {
-          const msg = update.channel_post || update.message;
-          if (!msg || !msg.text) continue;
-
-          const textLower = msg.text.toLowerCase();
-          const matches = queryTerms.some((term: string) => textLower.includes(term));
-          if (!matches && queryTerms.length > 0 && queryLower.trim() !== '') continue;
-
-          const chatTitle = msg.chat?.title || msg.from?.first_name || 'Unknown';
-          const chatUsername = msg.chat?.username || msg.from?.username || '';
-          const geo = extractCity(query);
-
-          allPosts.push({
-            post_id: `TG-BOT-${msg.message_id}-${msg.chat?.id || 0}-${Date.now()}`,
-            platform: 'Telegram',
-            author_handle: chatUsername ? `@${chatUsername}` : chatTitle,
-            author_id: String(msg.from?.id || msg.chat?.id || 0),
-            text: msg.text,
-            timestamp: new Date((msg.date || 0) * 1000).toISOString(),
-            detected_language: 'unknown',
-            geo_location: geo,
-            engagement_counts: { likes: 0, shares: 0, comments: 0 },
-            media_type: msg.photo ? 'image' : msg.video ? 'video' : 'text',
-            post_url: chatUsername ? `https://t.me/${chatUsername}/${msg.message_id}` : '',
-            source: 'telegram_bot',
-            is_synthetic: false,
-          });
-        }
+  // Fallback 1: If query had specific keywords but 0 exact matches, fetch recent broadcasts
+  if (allPosts.length === 0 && query.trim().length > 0) {
+    const fallbackChannels = targetChannels.slice(0, 8);
+    const broadPromises = fallbackChannels.map(ch => scrapeTelegramChannel(ch, ''));
+    const broadResults = await Promise.allSettled(broadPromises);
+    for (const result of broadResults) {
+      if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+        allPosts.push(...result.value.slice(0, 2));
       }
     }
-  } catch (err) {
-    console.warn('[LIVE] Telegram Bot API getUpdates failed:', err);
   }
 
-  console.log(`[LIVE] Telegram: ${allPosts.length} posts (${TELEGRAM_PUBLIC_CHANNELS.length} public channels + bot)`);
-  return allPosts.slice(0, 40);
+  // Fallback 2: If STILL zero posts (channels.json had non-working channels),
+  // try the hardcoded verified working channels directly
+  if (allPosts.length === 0) {
+    console.log('[LIVE] Telegram: directory channels returned 0 posts, trying verified fallback channels...');
+    const verifiedHandles = ['zeenews', 'ndtv', 'IndianExpress', 'scroll_in', 'livemint', 'thequint', 'CNNnews18', 'divyabhaskar', 'hindustantimes', 'ABPLive'];
+    const verifiedPromises = verifiedHandles.map(h => scrapeTelegramChannel(h, ''));
+    const verifiedResults = await Promise.allSettled(verifiedPromises);
+    for (const result of verifiedResults) {
+      if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+        allPosts.push(...result.value.slice(0, 3));
+      }
+    }
+  }
+
+  // Strategy 2: Bot API Updates (if token configured)
+  if (botToken) {
+    try {
+      const url = `https://api.telegram.org/bot${botToken}/getUpdates?limit=50&allowed_updates=["channel_post","message"]`;
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const data = await resp.json() as any;
+        if (data.ok && Array.isArray(data.result)) {
+          const queryTerms = queryLower.split(/\s+/).filter(t => t.length > 1);
+
+          for (const update of data.result) {
+            const msg = update.channel_post || update.message;
+            if (!msg || !msg.text) continue;
+
+            const textLower = msg.text.toLowerCase();
+            const matches = queryTerms.length === 0 || queryTerms.some((term: string) => textLower.includes(term));
+            if (!matches && queryTerms.length > 0) continue;
+
+            const chatTitle = msg.chat?.title || msg.from?.first_name || 'Telegram Bot Channel';
+            const chatUsername = msg.chat?.username || msg.from?.username || '';
+            const geo = extractCity(query);
+
+            allPosts.push({
+              post_id: `TG-BOT-${msg.message_id}-${msg.chat?.id || 0}-${Date.now()}`,
+              platform: 'Telegram',
+              author_handle: chatUsername ? `@${chatUsername}` : chatTitle,
+              author_id: String(msg.from?.id || msg.chat?.id || 0),
+              author_name: chatTitle,
+              text: msg.text,
+              timestamp: new Date((msg.date || 0) * 1000).toISOString(),
+              detected_language: 'unknown',
+              geo_location: geo,
+              engagement_counts: { likes: 0, shares: 0, comments: 0 },
+              media_type: msg.photo ? 'image' : msg.video ? 'video' : 'text',
+              post_url: chatUsername ? `https://t.me/${chatUsername}/${msg.message_id}` : '',
+              source: 'telegram_bot',
+              is_synthetic: false,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[LIVE] Telegram Bot API getUpdates failed:', err);
+    }
+  }
+
+  console.log(`[LIVE] Telegram: ${allPosts.length} posts fetched (${targetChannels.length} channels queried from directory)`);
+  return allPosts.slice(0, 50);
 }
 
 
@@ -537,11 +648,24 @@ async function fetchTelegramPosts(query: string, botToken: string): Promise<any[
  * GET /api/live/status
  * Check which APIs are configured and reachable.
  */
-router.get('/status', (_req: Request, res: Response) => {
+router.get('/status', async (_req: Request, res: Response) => {
   const twitterToken = process.env.TWITTER_BEARER_TOKEN;
   const youtubeKey = process.env.YOUTUBE_API_KEY;
   const metaToken = process.env.META_ACCESS_TOKEN;
   const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+
+  let telegramBotInfo: string | undefined = undefined;
+  if (telegramToken) {
+    try {
+      const resp = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
+      if (resp.ok) {
+        const data = await resp.json() as any;
+        if (data.ok && data.result) {
+          telegramBotInfo = `@${data.result.username} (${data.result.first_name})`;
+        }
+      }
+    } catch (_) {}
+  }
 
   res.json({
     twitter: { 
@@ -557,9 +681,11 @@ router.get('/status', (_req: Request, res: Response) => {
       warning: !metaToken ? 'Graph API token not set — using public page scraper as fallback' : undefined,
     },
     telegram: {
-      configured: !!telegramToken,
-      label: 'Telegram Bot API',
-      warning: !telegramToken ? 'No TELEGRAM_BOT_TOKEN set — get one from @BotFather' : undefined,
+      configured: true,
+      label: telegramToken ? 'Telegram (Public Directory + Bot API)' : 'Telegram (Public Channels Directory)',
+      botUsername: telegramBotInfo,
+      note: telegramBotInfo ? `Connected as ${telegramBotInfo}` : (telegramToken ? 'Bot Token Configured' : 'Using 50+ public news & alert channels'),
+      warning: !telegramToken ? 'No TELEGRAM_BOT_TOKEN set — using public channels only. Add token from @BotFather for private/admin channels' : undefined,
     },
 
     nlp_service: NLP_SERVICE_URL,
@@ -581,16 +707,12 @@ router.post('/fetch', async (req: Request, res: Response) => {
     return;
   }
 
-  const twitterToken = process.env.TWITTER_BEARER_TOKEN;
-  const youtubeKey = process.env.YOUTUBE_API_KEY;
   const targetPlatforms = platforms || ['twitter', 'youtube', 'telegram', 'facebook'];
-
-  console.log(`[LIVE] Fetching real data for query: "${query}" from ${targetPlatforms.join(', ')}`);
-
   const rawPosts: any[] = [];
   const errors: string[] = [];
 
   // Fetch from Twitter
+  const twitterToken = process.env.TWITTER_BEARER_TOKEN;
   if (targetPlatforms.includes('twitter') && twitterToken) {
     try {
       const tweets = await fetchTwitterPosts(query, twitterToken);
@@ -604,36 +726,33 @@ router.post('/fetch', async (req: Request, res: Response) => {
   }
 
   // Fetch from YouTube
+  const youtubeKey = process.env.YOUTUBE_API_KEY;
   if (targetPlatforms.includes('youtube') && youtubeKey) {
-    const videos = await fetchYouTubePosts(query, youtubeKey);
-    rawPosts.push(...videos);
-    console.log(`[LIVE] YouTube: ${videos.length} posts fetched`);
+    try {
+      const ytPosts = await fetchYouTubePosts(query, youtubeKey);
+      rawPosts.push(...ytPosts);
+      console.log(`[LIVE] YouTube: ${ytPosts.length} posts fetched`);
+    } catch (err: any) {
+      errors.push(`YouTube: ${err.message || 'Fetch Error'}`);
+    }
   } else if (targetPlatforms.includes('youtube') && !youtubeKey) {
     errors.push('YouTube: No YOUTUBE_API_KEY configured');
   }
 
-  // Meta (Facebook/Instagram) — Graph API or Scraper Fallback
-  const metaToken = process.env.META_ACCESS_TOKEN;
+  // Fetch from Facebook / Meta
   if (targetPlatforms.includes('facebook') || targetPlatforms.includes('meta')) {
-    if (metaToken) {
-      // Would use Graph API here (not implemented in live-fetch since it requires page IDs)
-      console.log('[LIVE] Meta Graph API configured but live-fetch uses watchlist profiles — use watchlist for Meta API fetching');
-    } else {
-      // Scraper fallback for public Facebook pages
-      console.log('[LIVE] Meta: No Graph API token — using public page scraper fallback');
-      try {
-        const fbPosts = await fetchFacebookPublicPosts(query);
-        rawPosts.push(...fbPosts);
-        console.log(`[LIVE] Facebook Scraper: ${fbPosts.length} posts extracted`);
-      } catch (err: any) {
-        errors.push(`Facebook Scraper: ${err.message || 'Scrape failed'}`);
-      }
+    try {
+      const fbPosts = await fetchFacebookPublicPosts(query);
+      rawPosts.push(...fbPosts);
+      console.log(`[LIVE] Facebook Scraper: ${fbPosts.length} posts extracted`);
+    } catch (err: any) {
+      errors.push(`Facebook Scraper: ${err.message || 'Scrape failed'}`);
     }
   }
 
-  // Fetch from Telegram (Bot API — reads channels the bot has access to)
+  // Fetch from Telegram (Public Directory Scraper + Bot API)
   const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (targetPlatforms.includes('telegram') && telegramToken) {
+  if (targetPlatforms.includes('telegram')) {
     try {
       const tgPosts = await fetchTelegramPosts(query, telegramToken);
       rawPosts.push(...tgPosts);
@@ -641,8 +760,6 @@ router.post('/fetch', async (req: Request, res: Response) => {
     } catch (err: any) {
       errors.push(`Telegram: ${err.message || 'Fetch Error'}`);
     }
-  } else if (targetPlatforms.includes('telegram') && !telegramToken) {
-    errors.push('Telegram: No TELEGRAM_BOT_TOKEN configured — get one from @BotFather');
   }
 
 

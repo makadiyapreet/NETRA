@@ -13,26 +13,46 @@ target directory structure contract.
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Optional, Any
 
-from sqlalchemy.orm import Session
+try:
+    from sqlalchemy.orm import Session  # type: ignore[import-not-found]
+except ImportError:
+    Session = Any  # type: ignore[misc,assignment]
 
-from ingestion.db.watchlist_crud import (
-    ActiveWatchlist,
-    add_geo_box,
-    add_hashtag,
-    add_keyword,
-    add_profile,
-    get_active_watchlist,
-    list_geo_boxes,
-    list_hashtags,
-    list_keywords,
-    list_profiles,
-    remove_geo_box,
-    remove_hashtag,
-    remove_keyword,
-    remove_profile,
-)
+try:
+    from ingestion.db.watchlist_crud import (
+        ActiveWatchlist,
+        add_geo_box,
+        add_hashtag,
+        add_keyword,
+        add_profile,
+        get_active_watchlist,
+        list_geo_boxes,
+        list_hashtags,
+        list_keywords,
+        list_profiles,
+        remove_geo_box,
+        remove_hashtag,
+        remove_keyword,
+        remove_profile,
+    )
+except ImportError:
+    # Define a minimal ActiveWatchlist for in-memory mode
+    from dataclasses import dataclass, field
+
+    @dataclass
+    class ActiveWatchlist:  # type: ignore[no-redef]
+        keywords: list = field(default_factory=list)
+        hashtags: list = field(default_factory=list)
+        geo_boxes: list = field(default_factory=list)
+        profiles: list = field(default_factory=list)
+
+    # Stubs — never called when session is None
+    add_geo_box = add_hashtag = add_keyword = add_profile = None  # type: ignore
+    get_active_watchlist = list_geo_boxes = list_hashtags = None  # type: ignore
+    list_keywords = list_profiles = remove_geo_box = None  # type: ignore
+    remove_hashtag = remove_keyword = remove_profile = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 

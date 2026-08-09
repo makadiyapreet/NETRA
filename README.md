@@ -14,7 +14,7 @@
 
 *Ingesting, classifying, and mapping threat networks across Indian languages (Gujarati, Hindi, Hinglish, Marathi, Bengali, Punjabi, English) in near-real-time.*
 
-[Architecture](#%EF%B8%8F-system-architecture) • [Key Features](#-key-features--capabilities) • [Quick Start (No Docker)](#-quick-start-no-docker) • [Docker Setup](#-one-command-setup-full-docker-stack) • [API Reference](#-api-reference) • [Security](#-security--compliance)
+[Architecture](#%EF%B8%8F-system-architecture) • [Key Features](#-key-features--capabilities) • [Quick Start](#-quick-start-no-docker) • [Individual Commands](COMMANDS.md) • [Docker Setup](#-one-command-setup-full-docker-stack) • [API Reference](#-api-reference) • [Security](#-security--compliance)
 
 </div>
 
@@ -34,7 +34,7 @@ NETRA supports three execution modes, designed for different infrastructure scen
 
 | Mode | Data Source | Infrastructure | Behavior |
 |---|---|---|---|
-| `MODE=offline` | **Real API Data** | **No Docker needed** ✅ | Connects to YouTube Data API v3 (confirmed working). Background poller fetches real Gujarat-region data every 60s. DataStore starts **empty** — only real data appears. Twitter excluded from background polling due to Free tier limitation. |
+| `MODE=offline` | **Real API Data** | **No Docker needed** ✅ | Connects to YouTube Data API v3, Telegram public channels, and Facebook. Background poller fetches real Gujarat-region data every 60s. DataStore starts **empty** — only real data appears. |
 | `MODE=kafka` | **Real Streaming Data** | Full Docker stack | Kafka-based streaming pipeline. Connectors push to `raw-posts` topic, NLP classifies, API Gateway consumes from `classified-posts` and `alerts`. |
 | `MODE=fixture` | **Demo/Fixture Data** | No Docker needed | Loads `fixtures/mock_data.json` (28KB pre-built posts). All fixture posts are marked `is_synthetic: true` and display a "SIMULATED" badge in the UI. For development and testing only. |
 
@@ -50,9 +50,9 @@ NETRA supports three execution modes, designed for different infrastructure scen
 | Platform | Status | Notes |
 |---|---|---|
 | **YouTube** | ✅ Working | YouTube Data API v3 fetches real videos. Background poller active. |
-| **Twitter/X** | ⚠️ Tier Limited | X Free tier API does NOT include search access (since 2023). Requires Basic tier ($100/mo). Code is correct; upgrade needed. |
+| **Telegram** | ✅ Working | Scrapes verified public channels (Zee News, NDTV, Indian Express, Scroll.in, The Quint, LiveMint, CNN-News18, Hindustan Times, Divya Bhaskar, ABP Live, BBC Hindi, Firstpost, ET Markets, Ministry of I&B) + Bot API via `@NETRA_Analyzerbot`. |
 | **Meta (FB/IG)** | ✅ Working | Meta Graph API authenticated. Configured via `META_ACCESS_TOKEN`. |
-| **Telegram** | ✅ Working | Scrapes 18 verified public Indian news channels (HT, Zee, Indian Express, DNA India, Scroll.in, The Quint, India TV, CNN-News18, LiveMint, TOI, Republic Bharat, NavbharatTimes, Divya Bhaskar, Dainik Bhaskar, Punjab Kesari, Al Jazeera, ABC News) + Bot API for private channels. |
+| **Twitter/X** | ⚠️ Tier Limited | X Free tier API does NOT include search access (since 2023). Requires Basic tier ($100/mo). Code is correct; upgrade needed. |
 
 > **API Keys Required:** Configure your social media API credentials in `.env`. See [Environment Configuration](#-environment-configuration) below.
 
@@ -98,11 +98,9 @@ NETRA supports three execution modes, designed for different infrastructure scen
 │  • MinHash LSH Near-Duplicate Content Clusterer             │   │  • JWT Auth & Role-Based Access Control (Analyst/Admin)     │
 │  • Neo4j Graph DB ETL + Louvain Community Detection         │   │  • Elasticsearch 8 Indexing & Filtered Search               │
 │  • Influencer PageRank & Coordinated Amplification Detector │   │  • Web Push Mobile Notifications & Audit Logging            │
-└──────────────────────────────┬──────────────────────────────┘   └──────────────────────────────┬──────────────────────────────┘
-                               │                                                                 │
-                               └──────────────────────────────┬──────────────────────────────────┘
-                                                              │
-                                                              ▼
+└──────────────────────────────────────────────────────────────┘   └──────────────────────────────────────────────────────────────┘
+                                                               │
+                                                               ▼
                                   ┌─────────────────────────────────────────────────────────────┐
                                   │                 LAYER 5: COMMAND DASHBOARD                  │
                                   │  • 12 React Pages (Login, Signup, Dashboard, Alerts,        │
@@ -144,7 +142,6 @@ NETRA supports three execution modes, designed for different infrastructure scen
 
 ### 5. 🛡️ Security, RBAC & Legal Audit Trail
 * **SOC Login & Signup UI:** Military-grade terminal-card authentication pages with HUD corner brackets, animated grid background, scanning-line effect, and "Verifying Clearance" loading states.
-* **Cinematic Splash Transitions:** NETRA-branded splash screen animations on login (radar sweep, glowing eye logo, typewriter terminal lines, progress bar — 2.8s) and logout (secure session termination — 2.2s).
 * **JWT Authentication:** Stateful user management backed by PostgreSQL (`users` table) with role separation (**Analyst** vs. **Admin**). In-memory fallback user store for offline/no-Docker development.
 * **Self-Service Signup:** Agency/jurisdiction dropdown (Ahmedabad Crime Branch, Surat Cyber Cell, ATS, SIB, NIA, CBI), password strength meter, and terms acknowledgment.
 * **Audit Logging:** All watchlist mutations and login attempts are logged with timestamps, IP addresses, and user roles.
@@ -174,56 +171,72 @@ NETRA supports three execution modes, designed for different infrastructure scen
 
 ## 💻 Quick Start (No Docker)
 
-Run all services locally without Docker — **recommended for hackathon demo**:
+### One-Command Startup (Recommended)
 
 ```bash
-# One-command startup
+# Clone and enter the project
+git clone https://github.com/makadiyapreet/NETRA.git && cd NETRA
+
+# One-time setup
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cd api-gateway && npm install && cd ..
+cd dashboard && npm install && cd ..
+cp .env.example .env    # Edit .env with your API credentials
+
+# Start all 5 services
 chmod +x run_offline.sh
 ./run_offline.sh
 ```
 
 This starts 5 services:
-1. **NLP Engine** (port 8000) — Zero-Shot LLM classification
-2. **Network Service** (port 8001) — Bot detection & graph analysis. Automatically falls back to DataStore heuristic clustering if Neo4j is unavailable.
-3. **Watchlist API** (port 8002) — Keyword/hashtag/profile management
-4. **API Gateway** (port 4000) — REST API + Socket.IO + live data fetching
-5. **Dashboard** (port 5173) — React command center UI
 
-The dashboard starts **empty** in `MODE=offline` and fills with real YouTube + Telegram data within ~60 seconds via the background poller. Live fetch from the Dashboard UI queries all 4 platforms (YouTube, Telegram, Twitter, Facebook) simultaneously.
+| # | Service | Port | Description |
+|---|---------|------|-------------|
+| 1 | **NLP Engine** | `8000` | Zero-Shot LLM threat classification (Sarvam AI / Groq) |
+| 2 | **Network Analysis** | `8001` | Bot detection & graph analytics. Falls back to heuristic clustering if Neo4j is unavailable. |
+| 3 | **Watchlist API** | `8002` | Keyword/hashtag/profile management |
+| 4 | **API Gateway** | `4000` | REST API + Socket.IO + live data fetching from YouTube, Telegram, Facebook |
+| 5 | **Dashboard** | `5173` | React command center UI |
 
-Or manually start each service:
+The dashboard starts **empty** in `MODE=offline` and fills with real YouTube + Telegram data within ~60 seconds via the background poller. Live fetch from the Dashboard UI queries all 4 platforms simultaneously.
 
+### Script Commands
+
+| Command | Action |
+|---------|--------|
+| `./run_offline.sh` | Start all 5 services |
+| `./run_offline.sh stop` | Stop all services and clean up ports |
+| `./run_offline.sh doctor` | Run diagnostics without starting anything |
+| `Ctrl+C` | Stop all services and exit cleanly |
+
+### Run Services Individually
+
+See **[COMMANDS.md](COMMANDS.md)** for detailed instructions on starting each service individually with health checks and troubleshooting.
+
+Quick reference:
 ```bash
-# 1. Environment setup
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your API credentials
+source .venv/bin/activate
 
-# 2. Start NLP Engine Service
-python -m uvicorn nlp_engine.inference.inference_service:app --port 8000 &
+# Python services
+python -m uvicorn nlp_engine.inference.inference_service:app --port 8000
+python -m uvicorn network_analysis.api.network_service:app --port 8001
+python -m uvicorn ingestion.api.watchlist_api:app --port 8002
 
-# 3. Start Network Analysis Service
-python -m uvicorn network_analysis.api.network_service:app --port 8001 &
-
-# 4. Start Watchlist API Service
-python -m uvicorn ingestion.api.watchlist_api:app --port 8002 &
-
-# 5. Start API Gateway (in api-gateway directory)
-cd api-gateway && npm run dev &
-
-# 6. Start Dashboard UI (in dashboard directory)
-cd dashboard && npm run dev &
+# Node services
+cd api-gateway && node dist/server.js      # Pre-compiled (fast)
+cd dashboard && npm run dev                 # Vite dev server
 ```
 
-> **Authentication:**
-> The system uses JWT-backed PostgreSQL authentication. When PostgreSQL is unavailable, an in-memory user store is used as fallback.
->
+### Authentication
+
 > **Seed Credentials (⚠️ Development/Demo Only — change before production):**
 > - **Admin:** `admin@netra.gov.in` / `netra2026`
 > - **Analyst:** `analyst@netra.gov.in` / `analyst2026`
 >
 > **Self-Service Signup:** Click "Request Access →" on the login page to create a new account.
+>
+> The system uses JWT-backed PostgreSQL authentication. When PostgreSQL is unavailable, an in-memory user store is used as fallback.
 
 ---
 
@@ -279,9 +292,10 @@ cp .env.example .env
 
 | Variable | Source | Purpose |
 |---|---|---|
-| `TWITTER_BEARER_TOKEN` | [developer.twitter.com](https://developer.twitter.com/) | Twitter/X API v2 (requires Basic tier for search) |
 | `YOUTUBE_API_KEY` | [console.cloud.google.com](https://console.cloud.google.com/) | YouTube Data API v3 ✅ |
+| `TELEGRAM_BOT_TOKEN` | [@BotFather on Telegram](https://t.me/BotFather) | Telegram Bot API for private/admin channel monitoring |
 | `META_ACCESS_TOKEN` | [developers.facebook.com](https://developers.facebook.com/) | Meta Graph API (optional — scraper fallback available) |
+| `TWITTER_BEARER_TOKEN` | [developer.twitter.com](https://developer.twitter.com/) | Twitter/X API v2 (requires Basic tier for search) |
 
 ### LLM Configuration
 
@@ -342,7 +356,7 @@ The system uses a carefully engineered system prompt that instructs the LLM to a
 | `GET` | `/api/posts` | List classified posts (filters: language, geo, keyword, threat_category) |
 | `GET` | `/api/alerts` | List alerts (severity filter) |
 | `POST` | `/api/alerts/:id/acknowledge` | Acknowledge an alert |
-| `POST` | `/api/live/fetch` | Fetch real posts from YouTube/Twitter/Facebook |
+| `POST` | `/api/live/fetch` | Fetch real posts from YouTube/Telegram/Facebook/Twitter |
 | `GET` | `/api/live/status` | Check API connectivity and tier info |
 | `GET` | `/api/network/bot-scores` | Bot likelihood scores |
 | `GET` | `/api/network/communities` | Neo4j Louvain community clusters |
@@ -426,8 +440,10 @@ NETRA/
 ├── api-gateway/                       # Layer 4: Node.js API Gateway (:4000)
 │   ├── src/routes/                    # 12 route modules (live-fetch, alerts, watchlist, etc.)
 │   ├── src/auth/                      # JWT authentication & RBAC
+│   ├── src/data/                      # telegram_channels.json (220+ public channel directory)
 │   ├── src/data-store.ts              # In-memory DataStore with is_synthetic marking
-│   └── src/middleware/                # Audit logger & Web Push dispatcher
+│   ├── src/middleware/                # Audit logger & Web Push dispatcher
+│   └── dist/                          # Pre-compiled JavaScript (run `npx tsc` to rebuild)
 ├── dashboard/                         # Layer 5: React Real-time Dashboard (:5173)
 │   ├── src/pages/                     # 12 pages (Dashboard, Alerts, Network, GeoMap, etc.)
 │   ├── src/components/                # Sidebar, FilterBar, PostCard (with SIMULATED badge), etc.
@@ -447,7 +463,8 @@ NETRA/
 ├── infra/                             # Dockerfiles, Prometheus, Grafana, Kibana configs
 ├── fixtures/                          # Demo data (used ONLY in MODE=fixture)
 ├── docker-compose.yml                 # 13-service Docker compose stack
-├── run_offline.sh                     # No-Docker startup script
+├── run_offline.sh                     # No-Docker startup script (start / stop / doctor)
+├── COMMANDS.md                        # Individual service run commands reference
 ├── NETRA_PROJECT_REPORT.md            # Complete executive project report
 ├── DELIVERABLES_STATUS.md             # Deliverable checklist with completion status
 ├── GAP_REPORT.md                      # 35 audit gaps found and resolved
@@ -468,10 +485,33 @@ NETRA/
 
 ---
 
+## 🔧 Troubleshooting
+
+### macOS: Services fail with `ECANCELED` errors
+Your project is in `~/Documents` which is synced by iCloud. The `run_offline.sh` script automatically pauses iCloud sync during startup. If running services manually, run this first:
+```bash
+killall bird fileproviderd 2>/dev/null   # They auto-restart after ~60s
+```
+
+### NLP Engine takes a long time to start
+The NLP engine loads ML models (torch, transformers) on startup. This takes 30-120 seconds depending on your machine. The script waits up to 180 seconds.
+
+### Telegram posts not appearing
+Most Telegram channels don't have public preview pages enabled. NETRA uses 14 verified channels that are confirmed to work. If you have a `TELEGRAM_BOT_TOKEN` configured in `.env`, the bot API will also be used for additional channels.
+
+### Port already in use
+```bash
+./run_offline.sh stop    # Clean up all ports
+./run_offline.sh doctor  # Check what's occupying ports
+```
+
+---
+
 ## 📄 Additional Documentation
 
 | Document | Description |
 |---|---|
+| [COMMANDS.md](COMMANDS.md) | Individual service run commands reference |
 | [NETRA_PROJECT_REPORT.md](NETRA_PROJECT_REPORT.md) | Complete executive project report with full technical details |
 | [DELIVERABLES_STATUS.md](DELIVERABLES_STATUS.md) | Deliverable checklist with completion status |
 | [KPI_REPORT.md](KPI_REPORT.md) | Key Performance Indicator metrics report |

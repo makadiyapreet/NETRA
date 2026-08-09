@@ -139,41 +139,37 @@ server.listen(PORT, async () => {
 
   const youtubeConfigured = !!process.env.YOUTUBE_API_KEY;
   const metaTokenSet = !!process.env.META_ACCESS_TOKEN;
+  const telegramConfigured = !!process.env.TELEGRAM_BOT_TOKEN;
+  const twitterConfigured = !!process.env.TWITTER_BEARER_TOKEN;
 
-  if (youtubeConfigured) {
-    setTimeout(() => {
-      console.log('[LIVE] Starting background YouTube data poller (Twitter excluded — Free tier lacks search access)');
-      const topics = ['news', 'breaking', 'police', 'alert', 'protest'];
+  // Multi-platform poller — polls all configured and public channels across platforms
+  setTimeout(() => {
+    console.log('[LIVE] Starting multi-platform background data poller [youtube, telegram, facebook, twitter]');
+    const topics = ['news', 'breaking', 'police', 'alert', 'protest', 'security'];
+    
+    let locIndex = 0;
+    const fetchLive = () => {
+      const topic = topics[Math.floor(Math.random() * topics.length)];
+      const location = GUJARAT_LOCATIONS[locIndex];
+      const q = `${topic} ${location}`;
       
-      let locIndex = 0;
-      const fetchLive = () => {
-        const topic = topics[Math.floor(Math.random() * topics.length)];
-        const location = GUJARAT_LOCATIONS[locIndex];
-        const q = `${topic} ${location}`;
-        
-        // Determine which platforms to poll
-        const platforms = ['youtube'];
-        if (!metaTokenSet) {
-          platforms.push('facebook'); // Use scraper fallback
-        }
-        
-        console.log(`[LIVE] Background polling for: ${q} on [${platforms.join(', ')}]`);
-        fetch(`http://localhost:${PORT}/api/live/fetch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: q, platforms })
-        }).catch(err => console.error('[LIVE] Background fetch failed:', err.message));
+      // Poll all platforms simultaneously
+      const platforms = ['youtube', 'telegram', 'facebook', 'twitter'];
+      
+      console.log(`[LIVE] Background polling for: "${q}" on [${platforms.join(', ')}]`);
+      fetch(`http://localhost:${PORT}/api/live/fetch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, platforms })
+      }).catch(err => console.error('[LIVE] Background fetch failed:', err.message));
 
-        locIndex = (locIndex + 1) % GUJARAT_LOCATIONS.length;
-      };
-      
-      // Fetch immediately, then every 60s to conserve YouTube API quota
-      fetchLive();
-      setInterval(fetchLive, 60000); 
-    }, 5000);
-  } else {
-    console.log('[LIVE] No API keys configured — background poller disabled');
-  }
+      locIndex = (locIndex + 1) % GUJARAT_LOCATIONS.length;
+    };
+    
+    // Fetch immediately, then every 60s
+    fetchLive();
+    setInterval(fetchLive, 60000); 
+  }, 5000);
 });
 
 // Graceful shutdown

@@ -32,15 +32,17 @@ logger = logging.getLogger(__name__)
 
 
 class GeoLocation(BaseModel):
-    lat: float
-    lng: float
-    place_name: str
+    lat: float = 0.0
+    lng: float = 0.0
+    place_name: Optional[str] = None
+    city: Optional[str] = None
 
 
 class EngagementCounts(BaseModel):
     likes: int = 0
     shares: int = 0
     comments: int = 0
+    views: Optional[int] = 0
 
 
 class PostInput(BaseModel):
@@ -48,16 +50,16 @@ class PostInput(BaseModel):
 
     post_id: str
     platform: str
-    author_id: str
-    author_handle: str
-    text: str
+    author_id: str = "unknown"
+    author_handle: str = "unknown"
+    text: str = ""
     language_hint: Optional[str] = None
-    created_at: str
-    geo_location: Optional[GeoLocation] = None
+    created_at: str = ""
+    geo_location: Optional[Any] = None
     hashtags: list[str] = Field(default_factory=list)
     mentions: list[str] = Field(default_factory=list)
     media_urls: list[str] = Field(default_factory=list)
-    engagement_counts: EngagementCounts = Field(default_factory=EngagementCounts)
+    engagement_counts: Optional[Any] = Field(default_factory=EngagementCounts)
     raw_payload: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -423,15 +425,31 @@ async def _kafka_consumer_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load models on startup."""
+    """Start server immediately, load models in background thread."""
+    import threading
+
     logger.info("Starting NLP Engine inference service...")
-    _load_models()
+
+    # Initialize config and kafka synchronously (fast)
+    _get_config()
     _init_kafka()
 
     config = _get_config()
     if config.mode == "kafka":
         import asyncio
         asyncio.create_task(_kafka_consumer_loop())
+
+    # Load ML models in background thread so /health responds immediately
+    def _bg_load():
+        try:
+            _load_models()
+            logger.info("Background model loading complete.")
+        except Exception as e:
+            logger.error(f"Background model loading failed: {e}")
+
+    t = threading.Thread(target=_bg_load, daemon=True)
+    t.start()
+    logger.info("Model loading started in background thread. Server is ready.")
 
     yield
     logger.info("Shutting down NLP Engine.")
