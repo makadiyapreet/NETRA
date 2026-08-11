@@ -30,17 +30,19 @@ def _get_connectors(settings=None):
         connectors.append(SimulatorConnector(count=100))
     else:
         # Import real connectors only when needed
-        if s.twitter_bearer_token:
+        # Connectors now manage their own KeyPools internally;
+        # check for any available keys (multi-key or single-key)
+        if s.twitter_bearer_tokens or s.twitter_bearer_token:
             from ingestion.connectors.twitter import TwitterConnector
 
             connectors.append(TwitterConnector(s))
 
-        if s.youtube_api_key:
+        if s.youtube_api_keys or s.youtube_api_key:
             from ingestion.connectors.youtube import YouTubeConnector
 
             connectors.append(YouTubeConnector(s))
 
-        if s.meta_access_token:
+        if s.meta_access_tokens or s.meta_access_token:
             from ingestion.connectors.meta import MetaConnector
 
             connectors.append(MetaConnector(s))

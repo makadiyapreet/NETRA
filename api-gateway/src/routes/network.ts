@@ -85,13 +85,65 @@ function computeClustersFromPosts(dataStore: any): any[] {
     if (cluster.length >= 2) {
       const clusterEdges = edges.filter(e => cluster.includes(e.source) && cluster.includes(e.target));
       const avgWeight = clusterEdges.reduce((s, e) => s + e.weight, 0) / Math.max(clusterEdges.length, 1);
+
+      // ── Coordinated Amplification Detection ──────────────────────
+      // Check if >5 accounts share near-identical text within 10 minutes
+      let isCoordinatedAmplification = false;
+      let amplificationWindow = '';
+      const BOT_THRESHOLD = 0.7;
+
+      if (cluster.length > 5) {
+        // Gather all posts from cluster accounts
+        const clusterPosts: any[] = [];
+        for (const account of cluster) {
+          const posts = authorPosts.get(account) || [];
+          clusterPosts.push(...posts.map((p: any) => ({ ...p, _author: account })));
+        }
+
+        // Check for text similarity within 10-minute windows
+        const sortedPosts = clusterPosts
+          .filter((p: any) => p.timestamp)
+          .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+        for (let i = 0; i < sortedPosts.length; i++) {
+          const windowStart = new Date(sortedPosts[i].timestamp).getTime();
+          const windowEnd = windowStart + 10 * 60 * 1000; // 10 minutes
+          const windowPosts = sortedPosts.filter((p: any) => {
+            const t = new Date(p.timestamp).getTime();
+            return t >= windowStart && t <= windowEnd;
+          });
+
+          if (windowPosts.length > 5) {
+            // Check text similarity
+            const texts = windowPosts.map((p: any) => (p.text || '').slice(0, 80).toLowerCase());
+            const uniqueTexts = new Set(texts);
+            const similarityRatio = 1 - (uniqueTexts.size / texts.length);
+
+            if (similarityRatio > 0.5) {
+              // Count unique authors with high bot scores
+              const uniqueAuthors = new Set(windowPosts.map((p: any) => p._author));
+              if (uniqueAuthors.size > 5) {
+                isCoordinatedAmplification = true;
+                amplificationWindow = `${new Date(windowStart).toISOString()} — ${new Date(windowEnd).toISOString()}`;
+                break;
+              }
+            }
+          }
+        }
+      }
+
       clusters.push({
         cluster_id: `CL-DS-${clusters.length + 1}`,
-        label: `Coordination Cluster ${clusters.length + 1} (${cluster.length} accounts)`,
+        label: isCoordinatedAmplification
+          ? `⚠️ COORDINATED AMPLIFICATION — ${cluster.length} accounts`
+          : `Coordination Cluster ${clusters.length + 1} (${cluster.length} accounts)`,
         accounts: cluster,
         coordination_score: +Math.min(avgWeight / 2, 0.95).toFixed(2),
         graph_edges: clusterEdges,
         source: 'datastore_heuristic',
+        coordinated_amplification: isCoordinatedAmplification,
+        amplification_severity: isCoordinatedAmplification ? 'critical' : null,
+        amplification_window: amplificationWindow || null,
       });
     }
   }
@@ -277,6 +329,122 @@ router.get('/communities', async (_req: Request, res: Response) => {
     total: 0,
     message: 'Community detection requires the network analysis service (port 8001). No communities detected yet.',
     source: 'none',
+  });
+});
+
+/**
+ * GET /api/network/amplification-alerts
+ * Returns only clusters flagged as coordinated amplification.
+ */
+router.get('/amplification-alerts', (req: Request, res: Response) => {
+  const dataStore = req.app.locals.dataStore;
+  const clusters = computeClustersFromPosts(dataStore);
+  const amplificationClusters = clusters.filter((c: any) => c.coordinated_amplification === true);
+
+  res.json({
+    data: amplificationClusters,
+    total: amplificationClusters.length,
+    alert_active: amplificationClusters.length > 0,
+    message: amplificationClusters.length > 0
+      ? `⚠️ ${amplificationClusters.length} coordinated amplification cluster(s) detected`
+      : 'No coordinated amplification detected',
+  });
+});
+
+/**
+ * GET /api/network/spread-graph/:postId
+ * Viral spread graph: finds all users who posted similar content to a given post.
+ */
+router.get('/spread-graph/:postId', (req: Request, res: Response) => {
+  const dataStore = req.app.locals.dataStore;
+  const { postId } = req.params;
+
+  const allPosts = dataStore.getPosts({ size: 10000 });
+  const targetPost = allPosts.data.find((p: any) => p.post_id === postId);
+
+  if (!targetPost) {
+    return res.status(404).json({ error: 'Post not found' });
+  }
+
+  const targetText = (targetPost.text || '').slice(0, 80).toLowerCase();
+  if (targetText.length < 10) {
+    return res.json({ nodes: [], edges: [], message: 'Post text too short for spread analysis' });
+  }
+
+  // Find similar posts from other authors
+  const nodes: any[] = [{
+    id: targetPost.post_id,
+    label: `📄 ${(targetPost.text || '').slice(0, 40)}...`,
+    type: 'post',
+    category: targetPost.classification?.threat_category || 'Unknown',
+    size: 20,
+    color: '#ef4444',
+  }];
+
+  const edges: any[] = [];
+  const seenAuthors = new Set<string>();
+
+  // Add the original author
+  const origAuthor = targetPost.author_handle || targetPost.author_id || 'unknown';
+  nodes.push({
+    id: `author-${origAuthor}`,
+    label: `@${origAuthor}`,
+    type: 'author',
+    size: 14,
+    color: '#3b82f6',
+  });
+  edges.push({
+    source: `author-${origAuthor}`,
+    target: targetPost.post_id,
+    type: 'posted_by',
+    weight: 2,
+  });
+  seenAuthors.add(origAuthor);
+
+  // Find similar posts
+  for (const post of allPosts.data) {
+    if (post.post_id === postId) continue;
+
+    const postText = (post.text || '').slice(0, 80).toLowerCase();
+    if (postText.length < 10) continue;
+
+    // Simple text similarity check
+    const words1 = new Set(targetText.split(/\s+/));
+    const words2 = postText.split(/\s+/);
+    const overlap = words2.filter((w: string) => words1.has(w)).length;
+    const similarity = overlap / Math.max(words1.size, 1);
+
+    if (similarity > 0.4) {
+      const author = post.author_handle || post.author_id || 'unknown';
+
+      // Add author node if not seen
+      if (!seenAuthors.has(author)) {
+        seenAuthors.add(author);
+        nodes.push({
+          id: `author-${author}`,
+          label: `@${author}`,
+          type: 'spreader',
+          size: 10,
+          color: '#f59e0b',
+        });
+      }
+
+      // Add spread edge
+      edges.push({
+        source: `author-${author}`,
+        target: targetPost.post_id,
+        type: 'shared_similar',
+        similarity: +similarity.toFixed(2),
+        weight: 1,
+      });
+    }
+  }
+
+  res.json({
+    nodes,
+    edges,
+    total_spreaders: seenAuthors.size - 1,
+    post_id: postId,
   });
 });
 

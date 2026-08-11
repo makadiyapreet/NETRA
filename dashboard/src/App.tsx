@@ -15,6 +15,8 @@ import SearchResults from './pages/SearchResults';
 import WatchlistManager from './pages/WatchlistManager';
 import ModelPerformance from './pages/ModelPerformance';
 import SystemHealth from './pages/SystemHealth';
+import CrawlScheduler from './pages/CrawlScheduler';
+import AdvancedTools from './pages/AdvancedTools';
 import SplashScreen from './components/SplashScreen';
 
 type Page =
@@ -27,7 +29,9 @@ type Page =
   | 'search'
   | 'watchlist'
   | 'model-perf'
-  | 'health';
+  | 'health'
+  | 'crawl-scheduler'
+  | 'tools';
 
 const IS_DEV_MODE = import.meta.env.VITE_AUTH_MODE === 'dev';
 
@@ -101,6 +105,8 @@ export default function App() {
     watchlist: 'Watchlist Manager',
     'model-perf': 'Model Performance',
     health: 'System Health',
+    'crawl-scheduler': 'Crawl Scheduler',
+    tools: 'Advanced Tools',
   };
 
   const handleSearch = (query: string) => {
@@ -120,6 +126,8 @@ export default function App() {
       case 'watchlist': return <WatchlistManager role={role} />;
       case 'model-perf': return <ModelPerformance />;
       case 'health': return <SystemHealth />;
+      case 'crawl-scheduler': return <CrawlScheduler />;
+      case 'tools': return <AdvancedTools />;
     }
   };
 

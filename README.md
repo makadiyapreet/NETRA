@@ -7,7 +7,7 @@
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://reactjs.org/)
 [![Docker Stack](https://img.shields.io/badge/Docker-13--Services-blue)](https://www.docker.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-84%2F84%20Passing-brightgreen.svg)](tests/)
+[![Tests Passing](https://img.shields.io/badge/Tests-112%2F112%20Passing-brightgreen.svg)](tests/)
 [![PS ID](https://img.shields.io/badge/Hackathon%20PS-ERH26__PS__05-orange.svg)](#-problem-statement-erh26_ps_05)
 
 **Enterprise-Grade Multilingual Cyber Threat Intelligence & OSINT Monitoring Platform for Law Enforcement Agencies**
@@ -47,14 +47,14 @@ NETRA supports three execution modes, designed for different infrastructure scen
 
 ### Platform Status
 
-| Platform | Status | Notes |
-|---|---|---|
-| **YouTube** | ✅ Working | YouTube Data API v3 fetches real videos. Background poller active. |
-| **Telegram** | ✅ Working | Scrapes verified public channels (Zee News, NDTV, Indian Express, Scroll.in, The Quint, LiveMint, CNN-News18, Hindustan Times, Divya Bhaskar, ABP Live, BBC Hindi, Firstpost, ET Markets, Ministry of I&B) + Bot API via `@NETRA_Analyzerbot`. |
-| **Meta (FB/IG)** | ✅ Working | Meta Graph API authenticated. Configured via `META_ACCESS_TOKEN`. |
-| **Twitter/X** | ⚠️ Tier Limited | X Free tier API does NOT include search access (since 2023). Requires Basic tier ($100/mo). Code is correct; upgrade needed. |
+| Platform | Status | Keys | Notes |
+|---|---|---|---|
+| **YouTube** | ✅ Working | Multi-key rotation | YouTube Data API v3 fetches real videos. Background poller active. Auto-rotates on quota exhaustion. |
+| **Telegram** | ✅ Working | Multi-key rotation | Scrapes verified public channels (Zee News, NDTV, Indian Express, Scroll.in, The Quint, LiveMint, CNN-News18, Hindustan Times, Divya Bhaskar, ABP Live, BBC Hindi, Firstpost, ET Markets, Ministry of I&B) + Bot API via `@NETRA_Analyzerbot`. |
+| **Meta (FB/IG)** | ✅ Working | Multi-key rotation | Meta Graph API authenticated. Scraper fallback when tokens are exhausted. |
+| **Twitter/X** | ⚠️ Tier Limited | Multi-key rotation | X Free tier API does NOT include search access (since 2023). Requires Basic tier ($100/mo). |
 
-> **API Keys Required:** Configure your social media API credentials in `.env`. See [Environment Configuration](#-environment-configuration) below.
+> **API Keys Required:** Configure your social media API credentials in `.env` using numbered suffixes (`_1`, `_2`, etc.) for multi-key rotation. See [Environment Configuration](#-environment-configuration) below.
 
 ---
 
@@ -82,7 +82,7 @@ NETRA supports three execution modes, designed for different infrastructure scen
                                   │                   LAYER 2: NLP ENGINE                       │
                                   │  • Script & Language ID (IndicLID + fastText)              │
                                   │  • AI4Bharat Xlit Romanized Transliteration                 │
-                                  │  • Zero-Shot LLM Classifiers (Sarvam AI / Groq)            │
+                                  │  • Zero-Shot LLM Classifiers (Groq / Sarvam AI)            │
                                   │  • XAI Explainer (Chain-of-Thought + Keyword Heuristics)    │
                                   │  • FAISS Vector Similarity & Shadow A/B Testing Router      │
                                   └──────────────────────────────┬──────────────────────────────┘
@@ -125,6 +125,7 @@ NETRA supports three execution modes, designed for different infrastructure scen
   * `FakeNews` — Fabricated news, viral misinformation, unverified rumors.
   * `Neutral` — General public discussion without threat signals.
 * **Transliteration Engine:** AI4Bharat Xlit Engine converts Romanized text (e.g. Gujlish/Hinglish *"danga karenge"*) into native Devanagari/Gujarati script (`दंगा करेंगे`) prior to classification.
+* **Bhashini (ULCA) Integration:** Second, independent translation/transliteration path using the Government of India's **National Language Translation Mission** API (free, no paid tier). Supports 12 Indian languages. Reduces dependency on commercial LLMs for core multilingual requirement. Register at [bhashini.gov.in](https://bhashini.gov.in/).
 
 ### 2. 🔍 Explainable AI (XAI) ("Why was this flagged?")
 * Every prediction generates an automated plain-language explanation:
@@ -147,19 +148,22 @@ NETRA supports three execution modes, designed for different infrastructure scen
 * **Audit Logging:** All watchlist mutations and login attempts are logged with timestamps, IP addresses, and user roles.
 * **Tamper-Evident Evidence Hash Chain:** SHA-256 hash chain for every alert and report, ensuring legal evidence integrity.
 * **Police FIR & I4C Exporter:** 1-click legal draft generator pre-filling IPC Sections 153A, 295A, 505, and IT Act Section 66F.
+* **Multi-Key API Rotation:** Generic `KeyPool` system supporting multiple API keys per platform with automatic failover on quota exhaustion. Exhausted keys auto-recover after platform-specific cooldown periods. Dashboard surfaces real-time key health via `/api/live/key-status`.
 
-### 6. 📊 12-Page Command Center Dashboard
+### 6. 📊 14-Page Command Center Dashboard
 0. **Login / Signup:** SOC terminal-card authentication with HUD brackets, animated grid, agency selection, cinematic splash transitions.
 1. **Threat Dashboard:** Real-time threat feed with live filters, daily AI briefings, threat velocity indicators.
-2. **Alert Center:** Socket.IO real-time alert dispatch with SEV 1–5 badges, analyst acknowledgment workflows, and platform filter (Twitter, YouTube, Telegram, Instagram, Facebook).
-3. **Network Graph:** Interactive `react-force-graph-2d` visualization of bot clusters and coordination nodes.
+2. **Alert Center:** Socket.IO real-time alert dispatch with SEV 1–5 badges, analyst acknowledgment workflows, per-alert AI summary generation, and platform filter (Twitter, YouTube, Telegram, Instagram, Facebook).
+3. **Network Graph:** Interactive `react-force-graph-2d` visualization of bot clusters. **Coordinated Amplification Detection** with red badges and warning banner when >5 accounts share near-identical text within 10 minutes.
 4. **Geo Intelligence:** Leaflet map with 6 tile types (Dark, Light, Satellite, Terrain, Street, Voyager) and cascading Country → State → City filters.
 5. **Trend Monitor:** Recharts keyword frequency spike timeseries and rolling z-score monitors.
-6. **Incident Reports:** Report generator exporting executive PDF, DOCX, and JSON threat escalation briefs.
+6. **Incident Reports:** Report generator with PDF, DOCX, JSON, Excel, and CSV exports. **FIR Draft Generator** with IPC/IT Act section auto-mapping and SHA-256 evidence hash chain. **AI-powered incident summaries** via Groq LLM.
 7. **Search Results:** Unified cross-entity search across posts, alerts, trend spikes, and bot clusters.
 8. **Watchlist Manager:** Admin CRUD for Keywords, Hashtags, Bounding Boxes, Tracked Profiles. Auto-refreshing matched-content panel with synthetic badges and platform links.
 9. **Model Performance:** Real-time metrics and latency monitoring for the Zero-Shot LLM classification engine.
 10. **System Health:** Monitoring dashboard showing status, ports, ingestion rates, and latencies for all services.
+11. **Crawl Scheduler:** Analyst-defined recurring crawl schedules with query, platform selection, interval configuration, live status indicators, error feedback, and auto-fire through the classify → store → alert pipeline.
+12. **Advanced Tools:** Direct access to backend-only APIs — Viral Spread Graph analyzer (by Post ID) and AI Deepfake Detector (by image URL) with graceful fallback when NLP Engine is offline.
 
 ### 7. 🔬 Data Integrity System (Phase D)
 * **`is_synthetic` Field:** Every post in the schema carries an `is_synthetic` boolean. Fixture data is always `true`; real API data is always `false`.
@@ -193,7 +197,7 @@ This starts 5 services:
 
 | # | Service | Port | Description |
 |---|---------|------|-------------|
-| 1 | **NLP Engine** | `8000` | Zero-Shot LLM threat classification (Sarvam AI / Groq) |
+| 1 | **NLP Engine** | `8000` | Zero-Shot LLM threat classification (Groq / Sarvam AI) |
 | 2 | **Network Analysis** | `8001` | Bot detection & graph analytics. Falls back to heuristic clustering if Neo4j is unavailable. |
 | 3 | **Watchlist API** | `8002` | Keyword/hashtag/profile management |
 | 4 | **API Gateway** | `4000` | REST API + Socket.IO + live data fetching from YouTube, Telegram, Facebook |
@@ -266,7 +270,7 @@ cd dashboard && npm install && npm run dev
 |---|---|---|
 | **React Command Dashboard** | `5173` | Main analyst UI |
 | **API Gateway** | `4000` | Node.js Express + Socket.IO REST/WS API |
-| **NLP Engine** | `8000` | Python/FastAPI — Zero-Shot LLM Prompting (Sarvam AI / Groq) |
+| **NLP Engine** | `8000` | Python/FastAPI — Zero-Shot LLM Prompting (Groq / Sarvam AI) |
 | **Network Analysis** | `8001` | Python/FastAPI — Bot detection, Neo4j graph, Louvain communities |
 | **Watchlist REST API** | `8002` | FastAPI PostgreSQL Watchlist Management |
 | **Kibana Analytics** | `5601` | Elasticsearch Index Pattern & Saved Dashboard |
@@ -290,20 +294,22 @@ cp .env.example .env
 
 ### Required API Credentials
 
+Each platform supports **multiple keys** via numbered suffixes (`_1`, `_2`, etc.) for automatic rotation when quota is exhausted. If no numbered keys exist, the un-suffixed variable is used as a pool of size 1.
+
 | Variable | Source | Purpose |
 |---|---|---|
-| `YOUTUBE_API_KEY` | [console.cloud.google.com](https://console.cloud.google.com/) | YouTube Data API v3 ✅ |
-| `TELEGRAM_BOT_TOKEN` | [@BotFather on Telegram](https://t.me/BotFather) | Telegram Bot API for private/admin channel monitoring |
-| `META_ACCESS_TOKEN` | [developers.facebook.com](https://developers.facebook.com/) | Meta Graph API (optional — scraper fallback available) |
-| `TWITTER_BEARER_TOKEN` | [developer.twitter.com](https://developer.twitter.com/) | Twitter/X API v2 (requires Basic tier for search) |
+| `YOUTUBE_API_KEY_1` / `_2` | [console.cloud.google.com](https://console.cloud.google.com/) | YouTube Data API v3 — auto-rotates on daily quota exhaustion |
+| `TELEGRAM_BOT_TOKEN_1` / `_2` | [@BotFather on Telegram](https://t.me/BotFather) | Telegram Bot API — auto-rotates on rate limits |
+| `META_ACCESS_TOKEN_1` / `_2` | [developers.facebook.com](https://developers.facebook.com/) | Meta Graph API — scraper fallback when all tokens exhausted |
+| `TWITTER_BEARER_TOKEN_1` / `_2` | [developer.twitter.com](https://developer.twitter.com/) | Twitter/X API v2 — auto-rotates on 15-min rate window |
 
 ### LLM Configuration
 
 | Variable | Default | Description |
 |---|---|---|
-| `SARVAM_API_KEY` | `your_key_here` | API Key for Sarvam AI (primary LLM) |
-| `GROQ_API_KEY` | `your_key_here` | API Key for Groq (fallback LLM) |
-| `ACTIVE_MODEL` | `zeroshot` | Classification mode: `zeroshot` (LLM) or fine-tuned model name |
+| `GROQ_API_KEY` | `your_key_here` | API Key for Groq (primary LLM — Llama-3.1-8B-Instant) |
+| `SARVAM_API_KEY` | `your_key_here` | API Key for Sarvam AI (optional secondary — enable via `USE_SARVAM_PRIMARY=true`) |
+| `USE_SARVAM_PRIMARY` | `false` | Set to `true` to use Sarvam AI as primary classifier instead of Groq |
 
 ### Threshold Configuration
 
@@ -319,7 +325,7 @@ cp .env.example .env
 
 ## 🧠 Zero-Shot LLM Inference
 
-NETRA uses a Zero-Shot LLM Prompting approach for real threat classification, connecting to Sarvam AI (primary) and Groq (fallback). This ensures highly accurate, multilingual text comprehension without the need for local GPU fine-tuning.
+NETRA uses a Zero-Shot LLM Prompting approach for real threat classification, connecting to Groq Llama-3.1-8B-Instant (primary) with Sarvam AI as optional secondary. This ensures highly accurate, multilingual text comprehension without the need for local GPU fine-tuning.
 
 ### Automated Setup (Recommended)
 
@@ -345,6 +351,10 @@ The system uses a carefully engineered system prompt that instructs the LLM to a
 |---|---|---|
 | `POST` | `/classify` | Classify a single post (returns threat category, confidence, sentiment) |
 | `POST` | `/classify-batch` | Classify multiple posts in batch |
+| `POST` | `/deepfake-check` | AI-generated image detection (deepfake) |
+| `POST` | `/bhashini/translate` | Bhashini (Gov of India) text translation |
+| `POST` | `/bhashini/transliterate` | Bhashini script transliteration |
+| `GET` | `/bhashini/status` | Bhashini API availability status |
 | `GET` | `/health` | Service health check |
 
 ### API Gateway (`:4000`)
@@ -363,10 +373,20 @@ The system uses a carefully engineered system prompt that instructs the LLM to a
 | `GET` | `/api/network/duplicates` | Near-duplicate post clusters |
 | `GET` | `/api/trends/spikes` | Keyword frequency spike timeseries |
 | `POST` | `/api/reports/generate` | Generate incident report (PDF/DOCX/JSON) |
+| `POST` | `/api/reports/generate-fir` | Generate FIR draft with IPC section mapping |
 | `GET` | `/api/search` | Unified cross-entity search |
 | `GET/POST` | `/api/watchlist` | CRUD watchlist management |
 | `GET` | `/api/watchlist/matches/:keyword` | Find posts matching a watchlist keyword |
 | `GET` | `/api/briefing/today` | AI-generated daily threat briefing |
+| `POST` | `/api/ai/generate-summary` | AI-generated police-briefing-style incident summary |
+| `GET` | `/api/live/key-status` | Per-platform API key pool health status |
+| `GET` | `/api/network/amplification-alerts` | Coordinated amplification detection alerts |
+| `GET` | `/api/network/spread-graph/:postId` | Viral spread graph for a specific post |
+| `POST` | `/api/ai/deepfake-check` | AI-generated image detection (deepfake check) |
+| `GET` | `/api/scheduled-crawls` | Scheduled crawl manager CRUD |
+| `POST` | `/api/bhashini/translate` | Bhashini (Gov of India) text translation |
+| `POST` | `/api/bhashini/transliterate` | Bhashini script transliteration |
+| `GET` | `/api/bhashini/status` | Bhashini API availability status |
 | `GET` | `/api/geo/hierarchy` | Cascading geo filter (Country → State → City) |
 | `GET` | `/api/health` | Full service health check |
 
@@ -430,7 +450,7 @@ NETRA/
 │   └── scheduler/                     # Celery task queue & daily briefing generator
 ├── nlp_engine/                        # Layer 2: Multilingual NLP Engine
 │   ├── models/                        # LLM prompt templates and API connectors
-│   ├── preprocessing/                 # IndicLID language ID, AI4Bharat transliteration, spaCy
+│   ├── preprocessing/                 # IndicLID language ID, AI4Bharat transliteration, Bhashini ULCA, spaCy
 │   ├── inference/                     # FastAPI inference (:8000), LLM routing, FAISS vector store
 │   └── datasets/                      # Test sample sets for LLM verification
 ├── network_analysis/                  # Layer 3: Bot & Network Graph Analysis
@@ -445,7 +465,7 @@ NETRA/
 │   ├── src/middleware/                # Audit logger & Web Push dispatcher
 │   └── dist/                          # Pre-compiled JavaScript (run `npx tsc` to rebuild)
 ├── dashboard/                         # Layer 5: React Real-time Dashboard (:5173)
-│   ├── src/pages/                     # 12 pages (Dashboard, Alerts, Network, GeoMap, etc.)
+│   ├── src/pages/                     # 14 pages (Dashboard, Alerts, Network, GeoMap, CrawlScheduler, AdvancedTools, etc.)
 │   ├── src/components/                # Sidebar, FilterBar, PostCard (with SIMULATED badge), etc.
 │   └── src/ThemeContext.tsx           # Persistent Dark / Light mode provider
 ├── reporting/                         # Incident Reporting & Evidence
@@ -462,6 +482,12 @@ NETRA/
 │   └── alert_schema.json
 ├── infra/                             # Dockerfiles, Prometheus, Grafana, Kibana configs
 ├── fixtures/                          # Demo data (used ONLY in MODE=fixture)
+├── docs/                              # Documentation
+│   ├── ARCHITECTURE.md                # System architecture deep-dive
+│   ├── API_REFERENCE.md               # Detailed API endpoint documentation
+│   ├── DATABASE_SCHEMA.md             # Database schema (PostgreSQL, DataStore, Neo4j)
+│   ├── DEPLOYMENT.md                  # Deployment instructions
+│   └── DEPENDENCIES.md               # Dependencies and requirements listing
 ├── docker-compose.yml                 # 13-service Docker compose stack
 ├── run_offline.sh                     # No-Docker startup script (start / stop / doctor)
 ├── COMMANDS.md                        # Individual service run commands reference
@@ -513,12 +539,12 @@ Most Telegram channels don't have public preview pages enabled. NETRA uses 14 ve
 |---|---|
 | [COMMANDS.md](COMMANDS.md) | Individual service run commands reference |
 | [NETRA_PROJECT_REPORT.md](NETRA_PROJECT_REPORT.md) | Complete executive project report with full technical details |
-| [DELIVERABLES_STATUS.md](DELIVERABLES_STATUS.md) | Deliverable checklist with completion status |
-| [KPI_REPORT.md](KPI_REPORT.md) | Key Performance Indicator metrics report |
 | [FUTURE_ENHANCEMENTS.md](FUTURE_ENHANCEMENTS.md) | Product roadmap & planned feature expansions |
-| [GAP_REPORT.md](GAP_REPORT.md) | 35 audit gaps found and resolved across 4 phases |
-| [BIAS_REVIEW_NOTES.md](BIAS_REVIEW_NOTES.md) | ML model bias assessment & mitigation notes |
-| [MIGRATION_NOTES.md](MIGRATION_NOTES.md) | System migration & upgrade documentation |
+| [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) | Database schema documentation (PostgreSQL, DataStore, Neo4j, Elasticsearch) |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment instructions (local dev, Docker, cloud) |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | Complete dependency and requirements listing |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | Detailed API endpoint documentation with request/response examples |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture deep-dive |
 
 ---
 

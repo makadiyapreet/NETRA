@@ -13,6 +13,8 @@ import {
   Moon,
   List,
   Search,
+  Clock,
+  ScanLine,
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
@@ -32,6 +34,8 @@ const navItems = [
   { id: 'geomap', label: 'Geo Map', icon: Globe },
   { id: 'trends', label: 'Trends', icon: TrendingUp },
   { id: 'reports', label: 'Reports', icon: FileText },
+  { id: 'crawl-scheduler', label: 'Crawl Scheduler', icon: Clock },
+  { id: 'tools', label: 'Advanced Tools', icon: ScanLine },
   { id: 'model-perf', label: 'Model Perf.', icon: TrendingUp },
   { id: 'health', label: 'System Health', icon: Shield },
 ];

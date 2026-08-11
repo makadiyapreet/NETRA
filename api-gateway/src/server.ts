@@ -20,6 +20,10 @@ import geoRouter from './routes/geo';
 import healthMetricsRouter from './routes/health-metrics';
 import liveFetchRouter from './routes/live-fetch';
 import modelEvalRouter from './routes/model-eval';
+import aiSummaryRouter from './routes/ai-summary';
+import scheduledCrawlsRouter from './routes/scheduled-crawls';
+import deepfakeRouter from './routes/deepfake';
+import bhashiniRouter from './routes/bhashini';
 
 dotenv.config({ path: '../.env' });
 
@@ -56,6 +60,10 @@ app.use('/api/geo', geoRouter);
 app.use('/api/health-metrics', healthMetricsRouter);
 app.use('/api/live', liveFetchRouter);
 app.use('/api/model', modelEvalRouter);
+app.use('/api/ai', aiSummaryRouter);
+app.use('/api/ai', deepfakeRouter);
+app.use('/api/bhashini', bhashiniRouter);
+app.use('/api/scheduled-crawls', scheduledCrawlsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

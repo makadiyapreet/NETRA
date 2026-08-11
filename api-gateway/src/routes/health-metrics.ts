@@ -6,14 +6,15 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { youtubePool, twitterPool, telegramPool, metaPool } from './live-fetch';
 
 const router = Router();
 
 const SERVICE_ENDPOINTS = [
-  { name: 'api_gateway', port: 4000, url: 'http://localhost:4000/api/health' },
-  { name: 'nlp_engine', port: 8000, url: 'http://localhost:8000/health' },
-  { name: 'network_service', port: 8001, url: 'http://localhost:8001/health' },
-  { name: 'watchlist_api', port: 8002, url: 'http://localhost:8002/health' },
+  { name: 'api_gateway', port: 4000, url: 'http://127.0.0.1:4000/api/health' },
+  { name: 'nlp_engine', port: 8000, url: 'http://127.0.0.1:8000/health' },
+  { name: 'network_service', port: 8001, url: 'http://127.0.0.1:8001/health' },
+  { name: 'watchlist_api', port: 8002, url: 'http://127.0.0.1:8002/health' },
 ];
 
 // Infrastructure services — only available in Docker/kafka mode
@@ -83,10 +84,44 @@ router.get('/', async (req: Request, res: Response) => {
         note: 'Real-time metrics from DataStore',
       },
       rate_limits: {
-        twitter: { status: process.env.TWITTER_BEARER_TOKEN ? 'AUTHENTICATED_NO_SEARCH' : 'NO_TOKEN', note: 'Authenticated but search requires Basic tier ($100/mo)' },
-        youtube: { status: process.env.YOUTUBE_API_KEY ? 'CONFIGURED' : 'NO_KEY' },
-        meta: { status: process.env.META_ACCESS_TOKEN ? 'CONFIGURED' : 'SCRAPER_FALLBACK' },
-        telegram: { status: process.env.TELEGRAM_BOT_TOKEN ? 'CONFIGURED' : 'NO_TOKEN', note: 'Get a token from @BotFather on Telegram' },
+        twitter: {
+          status: twitterPool.size > 0
+            ? (twitterPool.activeCount > 0 ? 'KEYS_AVAILABLE' : 'ALL_KEYS_EXHAUSTED')
+            : 'NO_TOKEN',
+          keys_active: twitterPool.activeCount,
+          keys_total: twitterPool.size,
+          note: twitterPool.size > 0
+            ? `${twitterPool.activeCount}/${twitterPool.size} keys active`
+            : 'Authenticated but search requires Basic tier ($100/mo)',
+        },
+        youtube: {
+          status: youtubePool.size > 0
+            ? (youtubePool.activeCount > 0 ? 'KEYS_AVAILABLE' : 'ALL_KEYS_EXHAUSTED')
+            : 'NO_KEY',
+          keys_active: youtubePool.activeCount,
+          keys_total: youtubePool.size,
+          note: `${youtubePool.activeCount}/${youtubePool.size} keys active`,
+        },
+        meta: {
+          status: metaPool.size > 0
+            ? (metaPool.activeCount > 0 ? 'KEYS_AVAILABLE' : 'ALL_KEYS_EXHAUSTED')
+            : 'SCRAPER_FALLBACK',
+          keys_active: metaPool.activeCount,
+          keys_total: metaPool.size,
+          note: metaPool.size > 0
+            ? `${metaPool.activeCount}/${metaPool.size} keys active`
+            : 'Using public page scraper as fallback',
+        },
+        telegram: {
+          status: telegramPool.size > 0
+            ? (telegramPool.activeCount > 0 ? 'KEYS_AVAILABLE' : 'ALL_KEYS_EXHAUSTED')
+            : 'NO_TOKEN',
+          keys_active: telegramPool.activeCount,
+          keys_total: telegramPool.size,
+          note: telegramPool.size > 0
+            ? `${telegramPool.activeCount}/${telegramPool.size} keys active`
+            : 'Get a token from @BotFather on Telegram',
+        },
       },
     };
 
@@ -97,3 +132,4 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 export default router;
+

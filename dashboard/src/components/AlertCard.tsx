@@ -1,4 +1,5 @@
-import { CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle, AlertTriangle, ExternalLink, Sparkles, Loader } from 'lucide-react';
 
 interface AlertCardProps {
   alert: any;
@@ -8,6 +9,30 @@ interface AlertCardProps {
 }
 
 export default function AlertCard({ alert, role, onAcknowledge, onUnacknowledge }: AlertCardProps) {
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
+  async function generateSummary() {
+    setSummaryLoading(true);
+    try {
+      const res = await fetch('/api/ai/generate-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_ids: [alert.post_id || alert.alert_id] }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSummary(data.summary);
+      } else {
+        setSummary('Failed to generate summary — check API connection');
+      }
+    } catch {
+      setSummary('Summary service unavailable');
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
+
   return (
     <div className={`glass-card alert-card sev-${alert.severity} ${alert.acknowledged ? 'acknowledged' : ''}`} style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       <div className="alert-header" style={{ marginBottom: '12px', alignItems: 'flex-start', display: 'flex', justifyContent: 'space-between' }}>
@@ -35,10 +60,47 @@ export default function AlertCard({ alert, role, onAcknowledge, onUnacknowledge 
           </span>
         </div>
       </div>
-      <p className="alert-description" style={{ fontSize: '14px', marginBottom: '16px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{alert.description}</p>
+      
+      {/* Post ID display */}
+      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>POST ID:</span>
+        <span style={{ fontSize: '12px', fontFamily: 'monospace', background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: '4px', color: 'var(--accent-blue)', userSelect: 'all' }}>{alert.post_id}</span>
+      </div>
+
+      <p className="alert-description" style={{ fontSize: '14px', marginBottom: '12px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{alert.description}</p>
+
+      {/* AI Summary Section */}
+      {summary && (
+        <div style={{
+          padding: '10px 14px', marginBottom: '12px', borderRadius: '8px',
+          background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+          fontSize: '13px', lineHeight: 1.6, fontStyle: 'italic', color: 'var(--text-primary)',
+        }}>
+          <span style={{ fontWeight: 600, color: '#10b981', fontSize: 11 }}>
+            <Sparkles size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> AI SUMMARY:
+          </span>{' '}
+          {summary}
+        </div>
+      )}
+
       <div className="alert-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', marginTop: 'auto', borderTop: '1px solid var(--border-subtle)' }}>
         <span style={{ color: 'var(--text-muted)' }}>{new Date(alert.timestamp).toLocaleString()}</span>
         <div className="flex items-center gap-3">
+          {/* Generate Summary button */}
+          {!summary && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={generateSummary}
+              disabled={summaryLoading}
+              style={{ fontSize: '11px', padding: '4px 10px', height: '28px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              {summaryLoading ? (
+                <><Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</>
+              ) : (
+                <><Sparkles size={12} /> Summary</>
+              )}
+            </button>
+          )}
           {alert.acknowledged ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span className="flex items-center gap-1.5" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>

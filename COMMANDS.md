@@ -151,6 +151,101 @@ echo "Network API:   " && curl -s http://localhost:8001/health | python3 -m json
 echo "Watchlist API: " && curl -s http://localhost:8002/health | python3 -m json.tool
 echo "API Gateway:   " && curl -s http://localhost:4000/api/health | python3 -m json.tool
 echo "Dashboard:     " && curl -sI http://localhost:5173 | head -1
+
+# Check API key pool status (multi-key rotation):
+curl -s http://localhost:4000/api/live/key-status | python3 -m json.tool
+
+# Check Bhashini API status:
+curl -s http://localhost:4000/api/bhashini/status | python3 -m json.tool
+```
+
+---
+
+## Bhashini (Government Translation) API Testing
+
+```bash
+# Check Bhashini status:
+curl -s http://localhost:4000/api/bhashini/status \
+  -H "X-User-Role: Admin" | python3 -m json.tool
+
+# Translate English → Hindi:
+curl -X POST http://localhost:4000/api/bhashini/translate \
+  -H "Content-Type: application/json" \
+  -H "X-User-Role: Admin" \
+  -d '{"text": "The protest was reported in Gujarat", "source_language": "en", "target_language": "hi"}' \
+  | python3 -m json.tool
+
+# Transliterate Romanized Hindi → Devanagari:
+curl -X POST http://localhost:4000/api/bhashini/transliterate \
+  -H "Content-Type: application/json" \
+  -H "X-User-Role: Admin" \
+  -d '{"text": "namaste kaise ho", "source_language": "en", "target_language": "hi"}' \
+  | python3 -m json.tool
+
+# Translate English → Gujarati:
+curl -X POST http://localhost:4000/api/bhashini/translate \
+  -H "Content-Type: application/json" \
+  -H "X-User-Role: Admin" \
+  -d '{"text": "Community safety alert issued", "source_language": "en", "target_language": "gu"}' \
+  | python3 -m json.tool
+```
+
+---
+
+## Multi-Key API Configuration
+
+NETRA supports multiple API keys per platform with automatic failover on quota exhaustion.
+
+```bash
+# In .env, use numbered suffixes:
+YOUTUBE_API_KEY_1=your_first_key
+YOUTUBE_API_KEY_2=your_second_key
+
+TWITTER_BEARER_TOKEN_1=your_first_token
+#TWITTER_BEARER_TOKEN_2=your_second_token
+
+# Un-suffixed vars still work (backward compatible, pool of 1):
+# YOUTUBE_API_KEY=single_key
+```
+
+---
+
+## Bhashini API Key Setup
+
+Bhashini is the **Government of India's free** National Language Translation Mission API (MeitY/ULCA).
+
+```bash
+# 1. Register at https://bhashini.gov.in/ulca/user/register (free, instant)
+# 2. Verify email → Log in → Profile → Generate API Key
+# 3. Add to .env:
+BHASHINI_USER_ID=your_user_id_from_profile
+BHASHINI_API_KEY=your_ulca_api_key_from_profile
+
+# 4. Restart services:
+./run_offline.sh stop && ./run_offline.sh
+
+# 5. Verify:
+curl -s http://localhost:4000/api/bhashini/status | python3 -m json.tool
+# Should show: "credentials_configured": true
+```
+
+---
+
+## Running Tests
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run all tests
+python3 -m pytest tests/ -v
+
+# Run specific test suites
+python3 -m pytest tests/test_key_pool.py -v       # Multi-key rotation (28 tests)
+python3 -m pytest tests/test_evidence_chain.py -v  # Evidence hash chain verification
+
+# TypeScript build check
+cd api-gateway && npx tsc --noEmit && cd ..
 ```
 
 ---

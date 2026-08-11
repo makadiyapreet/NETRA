@@ -4,6 +4,8 @@ Twitter / X API v2 connector.
 Uses ``tweepy`` for both search (recent tweets) and filtered streaming.
 Normalizes the Twitter API response into the shared ``PostMessage`` schema,
 ensuring ``raw_payload`` includes the four bot-detection fields.
+
+Supports multiple bearer tokens via the ``KeyPool`` rotation mechanism.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ import tweepy
 from ingestion.config import Settings, get_settings
 from ingestion.connectors.base import BaseConnector
 from ingestion.db.watchlist_crud import ActiveWatchlist
+from ingestion.key_pool import KeyPool, load_keys_from_env
 from ingestion.models import (
     EngagementCounts,
     GeoLocation,
@@ -36,8 +39,27 @@ _HASHTAG_RE = re.compile(r"#(\w+)", re.UNICODE)
 _MENTION_RE = re.compile(r"@(\w+)", re.UNICODE)
 
 
+def _is_twitter_quota_exhausted(exc: Exception) -> bool:
+    """Check if a tweepy exception indicates rate-limit / quota exhaustion."""
+    if isinstance(exc, tweepy.TooManyRequests):
+        return True
+    # Some tweepy versions raise Forbidden for rate limits
+    if isinstance(exc, tweepy.Forbidden):
+        err_msg = str(exc).lower()
+        if "rate limit" in err_msg or "too many" in err_msg:
+            return True
+    return False
+
+
+def _is_twitter_key_invalid(exc: Exception) -> bool:
+    """Check if a tweepy exception indicates an invalid/revoked bearer token."""
+    if isinstance(exc, tweepy.Unauthorized):
+        return True
+    return False
+
+
 class TwitterConnector(BaseConnector):
-    """Connector for X (Twitter) using the v2 API via tweepy."""
+    """Connector for X (Twitter) using the v2 API via tweepy with multi-key rotation."""
 
     @property
     def platform(self) -> str:
@@ -49,15 +71,33 @@ class TwitterConnector(BaseConnector):
 
     def __init__(self, settings: Optional[Settings] = None) -> None:
         self._settings = settings or get_settings()
-        self._bearer_token = self._settings.twitter_bearer_token
-        if not self._bearer_token:
-            logger.warning("TWITTER_BEARER_TOKEN not set — Twitter connector disabled")
 
-    def _get_client(self) -> tweepy.Client:
-        """Create a new tweepy Client."""
+        # Build key pool from numbered env vars, falling back to single token
+        keys = list(self._settings.twitter_bearer_tokens)
+        if not keys:
+            if self._settings.twitter_bearer_token:
+                keys = [self._settings.twitter_bearer_token]
+
+        # Twitter rate limits reset every 15 minutes for most endpoints
+        self._key_pool = KeyPool(keys, cooldown_seconds=900)
+
+        if self._key_pool.size == 0:
+            logger.warning("No Twitter bearer tokens configured — Twitter connector disabled")
+        else:
+            logger.info(
+                "Twitter KeyPool initialized: %d token(s) available", self._key_pool.size
+            )
+
+    @property
+    def key_pool(self) -> KeyPool:
+        """Expose the key pool for external status reporting."""
+        return self._key_pool
+
+    def _get_client(self, bearer_token: str) -> tweepy.Client:
+        """Create a new tweepy Client with a specific bearer token."""
         return tweepy.Client(
-            bearer_token=self._bearer_token,
-            wait_on_rate_limit=True,
+            bearer_token=bearer_token,
+            wait_on_rate_limit=False,  # we handle rotation ourselves
         )
 
     def fetch_posts(self, watchlist: ActiveWatchlist) -> list[PostMessage]:
@@ -66,12 +106,18 @@ class TwitterConnector(BaseConnector):
 
         Applies geo bounding-box filters if available.
         """
-        if not self._bearer_token:
-            logger.info("Twitter connector skipped — no bearer token")
+        if self._key_pool.size == 0:
+            logger.info("Twitter connector skipped — no bearer tokens")
             return []
 
-        client = self._get_client()
-        posts: list[PostMessage] = []
+        active_key = self._key_pool.get_active_key()
+        if active_key is None:
+            logger.error(
+                "Twitter connector: all %d tokens exhausted — skipping this cycle",
+                self._key_pool.size,
+            )
+            api_errors.labels(platform="twitter", error_type="all_keys_exhausted").inc()
+            return []
 
         # Build query from watchlist
         terms = watchlist.keyword_strings + watchlist.hashtag_strings
@@ -84,59 +130,83 @@ class TwitterConnector(BaseConnector):
         if len(query) > 512:
             query = query[:512]
 
-        try:
-            api_calls.labels(platform="twitter").inc()
-            response = client.search_recent_tweets(
-                query=query,
-                max_results=100,
-                tweet_fields=[
-                    "created_at",
-                    "geo",
-                    "lang",
-                    "public_metrics",
-                    "entities",
-                ],
-                expansions=["author_id", "geo.place_id"],
-                user_fields=[
-                    "created_at",
-                    "public_metrics",
-                    "username",
-                ],
-                place_fields=["full_name", "geo"],
-            )
+        return self._fetch_with_rotation(query)
 
-            if not response.data:
+    def _fetch_with_rotation(self, query: str) -> list[PostMessage]:
+        """Attempt search with key rotation on quota exhaustion."""
+        attempts = self._key_pool.size
+
+        for _ in range(attempts):
+            key = self._key_pool.get_active_key()
+            if key is None:
+                logger.error("Twitter: all tokens exhausted during fetch cycle")
+                api_errors.labels(platform="twitter", error_type="all_keys_exhausted").inc()
                 return []
 
-            # Build lookup maps for includes
-            users_map: dict[str, tweepy.User] = {}
-            if response.includes and "users" in response.includes:
-                for user in response.includes["users"]:
-                    users_map[user.id] = user
+            try:
+                return self._do_search(key, query)
+            except Exception as exc:
+                if _is_twitter_key_invalid(exc):
+                    self._key_pool.mark_invalid(key)
+                    logger.warning("Twitter token ...%s invalid — trying next", key[-4:])
+                    continue
+                if _is_twitter_quota_exhausted(exc):
+                    self._key_pool.mark_exhausted(key)
+                    logger.warning("Twitter token ...%s rate-limited — trying next", key[-4:])
+                    continue
+                # Not a quota/auth error — log and return empty
+                logger.error("Twitter connector error: %s", exc)
+                api_errors.labels(platform="twitter", error_type=type(exc).__name__).inc()
+                return []
 
-            places_map: dict[str, object] = {}
-            if response.includes and "places" in response.includes:
-                for place in response.includes["places"]:
-                    places_map[place.id] = place
+        return []
 
-            for tweet in response.data:
-                try:
-                    post = self._normalize(tweet, users_map, places_map)
-                    posts.append(post)
-                except Exception as exc:
-                    logger.warning("Failed to normalize tweet %s: %s", tweet.id, exc)
-                    api_errors.labels(platform="twitter", error_type="normalization").inc()
+    def _do_search(self, bearer_token: str, query: str) -> list[PostMessage]:
+        """Execute the actual Twitter search with a specific bearer token."""
+        client = self._get_client(bearer_token)
+        posts: list[PostMessage] = []
 
-        except tweepy.TooManyRequests:
-            logger.warning("Twitter rate limit hit — backing off")
-            api_errors.labels(platform="twitter", error_type="rate_limit").inc()
-            time.sleep(15)
-        except tweepy.TwitterServerError as exc:
-            logger.error("Twitter server error: %s", exc)
-            api_errors.labels(platform="twitter", error_type="server_error").inc()
-        except Exception as exc:
-            logger.error("Twitter connector error: %s", exc)
-            api_errors.labels(platform="twitter", error_type="unknown").inc()
+        api_calls.labels(platform="twitter").inc()
+        response = client.search_recent_tweets(
+            query=query,
+            max_results=100,
+            tweet_fields=[
+                "created_at",
+                "geo",
+                "lang",
+                "public_metrics",
+                "entities",
+            ],
+            expansions=["author_id", "geo.place_id"],
+            user_fields=[
+                "created_at",
+                "public_metrics",
+                "username",
+            ],
+            place_fields=["full_name", "geo"],
+        )
+
+        if not response.data:
+            return []
+
+        # Build lookup maps for includes
+        users_map: dict[str, tweepy.User] = {}
+        if response.includes and "users" in response.includes:
+            for user in response.includes["users"]:
+                users_map[user.id] = user
+
+        places_map: dict[str, object] = {}
+        if response.includes and "places" in response.includes:
+            for place in response.includes["places"]:
+                places_map[place.id] = place
+
+        for tweet in response.data:
+            try:
+                post = self._normalize(tweet, users_map, places_map)
+                posts.append(post)
+            except Exception as exc:
+                logger.warning("Failed to normalize tweet %s: %s", tweet.id, exc)
+                api_errors.labels(platform="twitter", error_type="normalization").inc()
 
         return posts
 

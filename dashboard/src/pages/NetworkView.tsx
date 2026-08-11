@@ -8,6 +8,9 @@ interface ClusterData {
   accounts: string[];
   coordination_score: number;
   graph_edges: { source: string; target: string; weight: number }[];
+  coordinated_amplification?: boolean;
+  amplification_severity?: string | null;
+  amplification_window?: string | null;
 }
 
 interface BotScore {
@@ -26,11 +29,27 @@ export default function NetworkView() {
   const [sortBy, setSortBy] = useState<'risk' | 'name' | 'connections'>('risk');
 
   const [serviceError, setServiceError] = useState<string | null>(null);
+  const [amplificationActive, setAmplificationActive] = useState(false);
+  const [amplificationCount, setAmplificationCount] = useState(0);
 
   useEffect(() => {
     fetchClusters();
     fetchAllBotScores();
+    fetchAmplificationAlerts();
   }, []);
+
+  async function fetchAmplificationAlerts() {
+    try {
+      const res = await fetch('/api/network/amplification-alerts');
+      if (res.ok) {
+        const data = await res.json();
+        setAmplificationActive(data.alert_active || false);
+        setAmplificationCount(data.total || 0);
+      }
+    } catch {
+      // Amplification check unavailable
+    }
+  }
 
   // Standalone bot scores — always fetched, shown when no clusters exist
   const [allBotScores, setAllBotScores] = useState<BotScore[]>([]);
@@ -240,13 +259,36 @@ export default function NetworkView() {
 
       {cluster && (
         <>
+          {/* Coordinated Amplification Banner */}
+          {amplificationActive && (
+            <div style={{
+              padding: '14px 20px', marginBottom: 16, borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))',
+              border: '1px solid rgba(239,68,68,0.4)',
+              display: 'flex', alignItems: 'center', gap: 12,
+              animation: 'pulse-border 2s infinite',
+            }}>
+              <span style={{ fontSize: 24 }}>⚠️</span>
+              <div>
+                <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 14 }}>
+                  COORDINATED AMPLIFICATION DETECTED
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  {amplificationCount} cluster(s) with &gt;5 accounts sharing near-identical text within 10-minute windows.
+                  This pattern indicates organized bot-driven amplification campaigns.
+                </div>
+              </div>
+            </div>
+          )}
           {/* Cluster Summary Stats */}
           <div className="stats-row" style={{ marginBottom: 20 }}>
             <div className="glass-card stat-card">
               <div className="stat-card-label">
                 <Network size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Cluster Name
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent-cyan)' }}>{cluster.label}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: (cluster as any).coordinated_amplification ? '#ef4444' : 'var(--accent-cyan)' }}>
+            {(cluster as any).coordinated_amplification && '🔴 '}{cluster.label}
+          </div>
             </div>
             <div className="glass-card stat-card">
               <div className="stat-card-label">

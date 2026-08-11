@@ -3,6 +3,8 @@ Meta Graph API connector (Facebook Pages + Instagram Business).
 
 Uses the official Graph API v22.0.  Requires a Page Access Token with
 ``pages_read_engagement`` and optionally ``instagram_basic`` permissions.
+
+Supports multiple access tokens via the ``KeyPool`` rotation mechanism.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import requests
 from ingestion.config import Settings, get_settings
 from ingestion.connectors.base import BaseConnector
 from ingestion.db.watchlist_crud import ActiveWatchlist
+from ingestion.key_pool import KeyPool, load_keys_from_env
 from ingestion.models import (
     EngagementCounts,
     GeoLocation,
@@ -34,12 +37,45 @@ _GRAPH_BASE = f"https://graph.facebook.com/{_GRAPH_API_VERSION}"
 _HASHTAG_RE = re.compile(r"#(\w+)", re.UNICODE)
 _MENTION_RE = re.compile(r"@(\w+)", re.UNICODE)
 
+# Meta Graph API error codes indicating rate-limit / quota exhaustion
+_META_RATE_LIMIT_CODES = {4, 17, 32, 613}
+# Meta Graph API error code indicating invalid/expired token
+_META_INVALID_TOKEN_CODE = 190
+
+
+def _is_meta_quota_exhausted(resp: requests.Response) -> bool:
+    """Check if a Meta Graph API response indicates rate-limit / quota exhaustion."""
+    if resp.status_code == 429:
+        return True
+    if resp.status_code in (400, 403):
+        try:
+            body = resp.json()
+            error_code = body.get("error", {}).get("code", 0)
+            if error_code in _META_RATE_LIMIT_CODES:
+                return True
+        except (ValueError, KeyError):
+            pass
+    return False
+
+
+def _is_meta_token_invalid(resp: requests.Response) -> bool:
+    """Check if a Meta Graph API response indicates an invalid/expired token."""
+    if resp.status_code in (400, 401, 403):
+        try:
+            body = resp.json()
+            error_code = body.get("error", {}).get("code", 0)
+            if error_code == _META_INVALID_TOKEN_CODE:
+                return True
+        except (ValueError, KeyError):
+            pass
+    return False
+
 
 class MetaConnector(BaseConnector):
     """
     Connector for Meta platforms (Facebook Pages + Instagram Business).
 
-    Pulls from page feeds using the Graph API.
+    Pulls from page feeds using the Graph API with multi-token rotation.
     """
 
     @property
@@ -52,14 +88,41 @@ class MetaConnector(BaseConnector):
 
     def __init__(self, settings: Optional[Settings] = None) -> None:
         self._settings = settings or get_settings()
-        self._token = self._settings.meta_access_token
-        if not self._token:
-            logger.warning("META_ACCESS_TOKEN not set — Meta connector disabled")
+
+        # Build key pool from numbered env vars, falling back to single token
+        keys = list(self._settings.meta_access_tokens)
+        if not keys:
+            if self._settings.meta_access_token:
+                keys = [self._settings.meta_access_token]
+
+        # Meta rate limits vary; use 1-hour cooldown as reasonable default
+        self._key_pool = KeyPool(keys, cooldown_seconds=3600)
+
+        if self._key_pool.size == 0:
+            logger.warning("No META_ACCESS_TOKEN configured — Meta connector disabled")
+        else:
+            logger.info(
+                "Meta KeyPool initialized: %d token(s) available", self._key_pool.size
+            )
+
+    @property
+    def key_pool(self) -> KeyPool:
+        """Expose the key pool for external status reporting."""
+        return self._key_pool
 
     def fetch_posts(self, watchlist: ActiveWatchlist) -> list[PostMessage]:
         """Fetch posts from tracked Facebook Pages and Instagram accounts."""
-        if not self._token:
-            logger.info("Meta connector skipped — no access token")
+        if self._key_pool.size == 0:
+            logger.info("Meta connector skipped — no access tokens")
+            return []
+
+        active_key = self._key_pool.get_active_key()
+        if active_key is None:
+            logger.error(
+                "Meta connector: all %d tokens exhausted — skipping this cycle",
+                self._key_pool.size,
+            )
+            api_errors.labels(platform="facebook", error_type="all_keys_exhausted").inc()
             return []
 
         posts: list[PostMessage] = []
@@ -68,7 +131,7 @@ class MetaConnector(BaseConnector):
         for profile in watchlist.profiles:
             if profile.platform in ("facebook", "instagram"):
                 try:
-                    page_posts = self._fetch_page_feed(
+                    page_posts = self._fetch_page_feed_with_rotation(
                         profile.profile_id,
                         profile.handle,
                         profile.platform,
@@ -88,10 +151,43 @@ class MetaConnector(BaseConnector):
 
         return posts
 
-    def _fetch_page_feed(
+    def _fetch_page_feed_with_rotation(
         self, page_id: str, handle: str, platform_name: str
     ) -> list[PostMessage]:
-        """Fetch the feed of a specific Facebook/Instagram page."""
+        """Fetch a page feed with token rotation on rate-limit errors."""
+        attempts = self._key_pool.size
+
+        for _ in range(attempts):
+            token = self._key_pool.get_active_key()
+            if token is None:
+                logger.error("Meta: all tokens exhausted — cannot fetch page %s", page_id)
+                return []
+
+            posts, should_rotate, is_invalid = self._do_fetch_page_feed(
+                token, page_id, handle, platform_name
+            )
+
+            if is_invalid:
+                self._key_pool.mark_invalid(token)
+                logger.warning("Meta token ...%s invalid — trying next", token[-4:])
+                continue
+            if should_rotate:
+                self._key_pool.mark_exhausted(token)
+                logger.warning("Meta token ...%s rate-limited — trying next", token[-4:])
+                continue
+
+            return posts
+
+        return []
+
+    def _do_fetch_page_feed(
+        self, token: str, page_id: str, handle: str, platform_name: str
+    ) -> tuple[list[PostMessage], bool, bool]:
+        """
+        Fetch the feed of a specific Facebook/Instagram page.
+
+        Returns (posts, should_rotate, is_invalid).
+        """
         posts: list[PostMessage] = []
 
         if platform_name == "instagram":
@@ -102,7 +198,7 @@ class MetaConnector(BaseConnector):
             fields = "id,message,created_time,full_picture,shares,likes.summary(true),comments.summary(true),from"
 
         params = {
-            "access_token": self._token,
+            "access_token": token,
             "fields": fields,
             "limit": 50,
         }
@@ -110,11 +206,12 @@ class MetaConnector(BaseConnector):
         api_calls.labels(platform=platform_name).inc()
         resp = requests.get(url, params=params, timeout=30)
 
-        if resp.status_code == 429:
-            retry_after = int(resp.headers.get("Retry-After", 60))
-            logger.warning("Meta rate limit — sleeping %ds", retry_after)
-            time.sleep(retry_after)
-            return []
+        # Check for token-level errors before parsing data
+        if _is_meta_token_invalid(resp):
+            return [], False, True  # is_invalid=True
+
+        if _is_meta_quota_exhausted(resp):
+            return [], True, False  # should_rotate=True
 
         resp.raise_for_status()
         data = resp.json()
@@ -129,7 +226,7 @@ class MetaConnector(BaseConnector):
             except Exception as exc:
                 logger.warning("Failed to normalize Meta post: %s", exc)
 
-        return posts
+        return posts, False, False
 
     def _normalize_facebook(
         self, item: dict, page_id: str, handle: str

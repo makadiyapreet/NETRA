@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PostCard from '../components/PostCard';
 import FilterBar from '../components/FilterBar';
-import { FileText, Download, AlertTriangle, CheckCircle, Loader, FileSpreadsheet } from 'lucide-react';
+import { FileText, Download, AlertTriangle, CheckCircle, Loader, FileSpreadsheet, Scale, Sparkles } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -45,6 +45,12 @@ export default function IncidentReport({ role }: IncidentReportProps) {
   const [generating, setGenerating] = useState(false);
   const [report, setReport] = useState<ReportData | null>(null);
   const [error, setError] = useState('');
+
+  // FIR and AI Summary state
+  const [generatingFir, setGeneratingFir] = useState(false);
+  const [fir, setFir] = useState<any>(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [aiSummary, setAiSummary] = useState<any>(null);
 
   const [filters, setFilters] = useState({
     language: '',
@@ -124,6 +130,56 @@ export default function IncidentReport({ role }: IncidentReportProps) {
       setError(err.message || 'Report generation failed');
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function generateFIR() {
+    if (selectedIds.size === 0) return;
+    setGeneratingFir(true);
+    setError('');
+    setFir(null);
+    try {
+      const res = await fetch('/api/reports/generate-fir', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': role,
+          'X-User-Name': 'demo_admin',
+        },
+        body: JSON.stringify({ post_ids: [...selectedIds] }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to generate FIR');
+      }
+      setFir(await res.json());
+    } catch (err: any) {
+      setError(err.message || 'FIR generation failed');
+    } finally {
+      setGeneratingFir(false);
+    }
+  }
+
+  async function generateAISummary() {
+    if (selectedIds.size === 0) return;
+    setGeneratingSummary(true);
+    setError('');
+    setAiSummary(null);
+    try {
+      const res = await fetch('/api/ai/generate-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_ids: [...selectedIds] }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to generate summary');
+      }
+      setAiSummary(await res.json());
+    } catch (err: any) {
+      setError(err.message || 'AI summary generation failed');
+    } finally {
+      setGeneratingSummary(false);
     }
   }
 
@@ -233,7 +289,7 @@ export default function IncidentReport({ role }: IncidentReportProps) {
             Select posts to include in an incident report · {selectedIds.size} selected
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button className="btn btn-ghost btn-sm" onClick={selectAll}>
             {selectedIds.size === posts.length ? 'Deselect All' : 'Select All'}
           </button>
@@ -260,6 +316,34 @@ export default function IncidentReport({ role }: IncidentReportProps) {
               <AlertTriangle size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> Admin role required to generate
             </span>
           )}
+          {role === 'Admin' && (
+            <>
+              <button
+                className="btn btn-secondary"
+                onClick={generateFIR}
+                disabled={selectedIds.size === 0 || generatingFir}
+                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+              >
+                {generatingFir ? (
+                  <><Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analyzing...</>
+                ) : (
+                  <><Scale size={14} /> Analyze Legal Violations ({selectedIds.size})</>
+                )}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={generateAISummary}
+                disabled={selectedIds.size === 0 || generatingSummary}
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+              >
+                {generatingSummary ? (
+                  <><Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</>
+                ) : (
+                  <><Sparkles size={14} /> AI Summary ({selectedIds.size})</>
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -277,6 +361,88 @@ export default function IncidentReport({ role }: IncidentReportProps) {
       </div>
 
       <FilterBar filters={filters} onChange={handleFilterChange} onClear={clearFilters} />
+
+      {/* AI Summary Result */}
+      {aiSummary && (
+        <div className="glass-card" style={{ padding: 20, marginBottom: 20, border: '1px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.05)' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Sparkles size={18} style={{ color: '#10b981' }} />
+            AI-Generated Incident Summary
+          </h3>
+          <p style={{ fontSize: 14, lineHeight: 1.7, fontStyle: 'italic', marginBottom: 12, color: 'var(--text-primary)' }}>
+            "{aiSummary.summary}"
+          </p>
+          <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'var(--text-secondary)' }}>
+            <span>Model: {aiSummary.model}</span>
+            <span>Source posts: {aiSummary.source_posts}</span>
+            <span>Generated: {new Date(aiSummary.generated_at).toLocaleTimeString()}</span>
+            {aiSummary.tokens_used > 0 && <span>Tokens: {aiSummary.tokens_used}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* FIR Result */}
+      {fir && (
+        <div className="glass-card" style={{ padding: 20, marginBottom: 20, border: '1px solid rgba(139,92,246,0.4)', background: 'rgba(139,92,246,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Scale size={18} style={{ color: '#8b5cf6' }} />
+                Legal Violation Analysis — {fir.fir_id}
+              </h3>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                Status: {fir.status} · Jurisdiction: {fir.complainant?.jurisdiction} · Generated {new Date(fir.generated_at).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Applicable Law */}
+          <div style={{ marginBottom: 14 }}>
+            <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-primary)' }}>
+              Applicable IPC / IT Act Sections
+            </h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {fir.applicable_law?.sections?.map((s: string, i: number) => (
+                <span key={s} style={{
+                  padding: '4px 10px', borderRadius: '6px', fontSize: 12, fontWeight: 600,
+                  background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.3)',
+                }}>
+                  {s}
+                  <span style={{ fontWeight: 400, marginLeft: 4, fontSize: 11, opacity: 0.8 }}>
+                    — {fir.applicable_law?.descriptions?.[i]?.slice(0, 50)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Incident Summary */}
+          <div style={{ marginBottom: 14 }}>
+            <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: 'var(--text-primary)' }}>Incident</h4>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              {fir.incident?.description}
+            </p>
+          </div>
+
+          {/* Evidence Chain */}
+          <div style={{ marginBottom: 10 }}>
+            <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: 'var(--text-primary)' }}>Evidence Hash Chain</h4>
+            <p style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+              Chain length: {fir.evidence_chain?.chain_length} · Latest hash: {fir.evidence_chain?.latest_hash?.slice(0, 24)}...
+            </p>
+          </div>
+
+          {/* Recommendations */}
+          <div>
+            <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-primary)' }}>Recommendations</h4>
+            {fir.recommendations?.map((r: string, i: number) => (
+              <p key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                • {r}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Report Preview */}
       {report && (

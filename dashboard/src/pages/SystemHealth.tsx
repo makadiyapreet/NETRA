@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Activity, RefreshCw, Wifi, WifiOff, AlertTriangle, Database, Server } from 'lucide-react';
+import { Activity, RefreshCw, Wifi, WifiOff, AlertTriangle, Database, Server, Key, Shield } from 'lucide-react';
 
 interface ServiceStatus {
   name: string;
@@ -19,6 +19,25 @@ interface DataModeInfo {
   data_label: string;
 }
 
+interface KeyInfo {
+  key_suffix: string;
+  status: 'active' | 'exhausted' | 'invalid';
+  exhausted_at: number | null;
+}
+
+interface PlatformKeyPool {
+  active: number;
+  total: number;
+  keys: KeyInfo[];
+}
+
+interface KeyPoolStatus {
+  youtube: PlatformKeyPool;
+  twitter: PlatformKeyPool;
+  telegram: PlatformKeyPool;
+  meta: PlatformKeyPool;
+}
+
 // Service definitions (display only — health is fetched from API Gateway)
 const SERVICE_DEFS = [
   { name: 'API Gateway', port: 4000, description: 'Node.js Express + Socket.IO REST/WS API', key: 'api_gateway' },
@@ -36,11 +55,25 @@ const INFRA_SERVICES = [
   { name: 'PostgreSQL DB', port: 5432, description: 'Watchlist & User Account Store' },
 ];
 
+const PLATFORM_LABELS: Record<string, { name: string; icon: string }> = {
+  youtube: { name: 'YouTube', icon: '📺' },
+  twitter: { name: 'Twitter/X', icon: '🐦' },
+  telegram: { name: 'Telegram', icon: '✈️' },
+  meta: { name: 'Meta (FB/IG)', icon: '📘' },
+};
+
+const KEY_STATUS_COLORS: Record<string, string> = {
+  active: '#22c55e',
+  exhausted: '#f59e0b',
+  invalid: '#ef4444',
+};
+
 export default function SystemHealth() {
   const [services, setServices] = useState<ServiceStatus[]>(
     SERVICE_DEFS.map(s => ({ name: s.name, port: s.port, description: s.description, status: 'checking' as const }))
   );
   const [dataMode, setDataMode] = useState<DataModeInfo | null>(null);
+  const [keyPoolStatus, setKeyPoolStatus] = useState<KeyPoolStatus | null>(null);
   const [lastCheck, setLastCheck] = useState<string>('');
   const [checking, setChecking] = useState(false);
 
@@ -120,6 +153,14 @@ export default function SystemHealth() {
       }
     } catch (_) {}
 
+    // Fetch key pool status
+    try {
+      const res = await fetch('/api/live/key-status');
+      if (res.ok) {
+        setKeyPoolStatus(await res.json());
+      }
+    } catch (_) {}
+
     setLastCheck(new Date().toLocaleTimeString());
     setChecking(false);
   }, []);
@@ -180,6 +221,95 @@ export default function SystemHealth() {
             {dataMode.synthetic_posts > 0 && (
               <span style={{ color: '#f59e0b' }}>Synthetic: <strong>{dataMode.synthetic_posts}</strong></span>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* API Key Pool Status */}
+      {keyPoolStatus && (
+        <div className="services-grid" style={{ marginBottom: 20 }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Key size={16} />
+            API Key Pool Status
+            <span style={{
+              fontSize: 10, fontWeight: 600, padding: '2px 8px',
+              borderRadius: 4, background: 'rgba(34,197,94,0.1)',
+              color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)',
+            }}>
+              MULTI-KEY ROTATION
+            </span>
+          </h3>
+          <div className="services-list">
+            {Object.entries(keyPoolStatus).map(([platform, pool]) => {
+              const info = PLATFORM_LABELS[platform] || { name: platform, icon: '🔑' };
+              const allExhausted = pool.total > 0 && pool.active === 0;
+              const hasIssues = pool.active < pool.total;
+              const borderColor = pool.total === 0 ? 'var(--border-subtle)' : allExhausted ? '#ef4444' : hasIssues ? '#f59e0b' : '#22c55e';
+
+              return (
+                <div key={platform} className="service-status-card" style={{
+                  borderLeft: `3px solid ${borderColor}`,
+                }}>
+                  <div className="service-status-header" style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: 14, marginRight: 4 }}>{info.icon}</span>
+                    <span className="service-name">{info.name}</span>
+                    <span style={{
+                      marginLeft: 'auto',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '1px 8px',
+                      borderRadius: 10,
+                      background: pool.total === 0 ? 'rgba(100,100,100,0.15)' : allExhausted ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
+                      color: pool.total === 0 ? '#888' : allExhausted ? '#ef4444' : '#22c55e',
+                    }}>
+                      {pool.total === 0 ? 'No Keys' : `${pool.active}/${pool.total} active`}
+                    </span>
+                  </div>
+
+                  {pool.keys.length > 0 && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                      {pool.keys.map((k, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '2px 8px', borderRadius: 4,
+                          background: 'var(--bg-tertiary)',
+                          fontSize: 11, fontFamily: 'monospace',
+                        }}>
+                          <span style={{
+                            width: 6, height: 6, borderRadius: '50%',
+                            background: KEY_STATUS_COLORS[k.status] || '#888',
+                            display: 'inline-block',
+                            boxShadow: k.status === 'active' ? '0 0 4px rgba(34,197,94,0.5)' : 'none',
+                          }} />
+                          <span style={{ color: 'var(--text-secondary)' }}>...{k.key_suffix}</span>
+                          <span style={{ color: KEY_STATUS_COLORS[k.status] || '#888', fontSize: 10, fontWeight: 600 }}>
+                            {k.status}
+                          </span>
+                          {k.status === 'exhausted' && k.exhausted_at && (
+                            <span style={{ color: 'var(--text-muted)', fontSize: 9 }}>
+                              ({new Date(k.exhausted_at).toLocaleTimeString()})
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {pool.total === 0 && (
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '4px 0 0', fontStyle: 'italic' }}>
+                      No API keys configured for this platform
+                    </p>
+                  )}
+
+                  {allExhausted && pool.total > 0 && (
+                    <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0', fontWeight: 600 }}>
+                      <AlertTriangle size={10} style={{ display: 'inline', marginRight: 4 }} />
+                      All keys exhausted — platform temporarily unavailable
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

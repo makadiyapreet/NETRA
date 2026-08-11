@@ -5,45 +5,56 @@
  * without needing Kafka. Results are classified by the NLP engine
  * and added to the data store.
  * 
- * GET  /api/live/status          — Check API connectivity
+ * GET  /api/live/status          — Check API connectivity & key pool info
+ * GET  /api/live/key-status       — Per-platform key pool status
  * POST /api/live/fetch?q=keyword — Fetch & classify real posts
  */
 
 import { Router, Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  KeyPool,
+  loadKeysFromEnv,
+  isYouTubeQuotaExhausted,
+  isYouTubeKeyInvalid,
+  isTwitterQuotaExhausted,
+  isTwitterKeyInvalid,
+  isTelegramQuotaExhausted,
+  isTelegramKeyInvalid,
+  isMetaQuotaExhausted,
+  isMetaKeyInvalid,
+} from '../key-pool';
 
 const router = Router();
 
-const NLP_SERVICE_URL = `http://${process.env.NLP_SERVICE_HOST || 'localhost'}:${process.env.NLP_SERVICE_PORT || '8000'}`;
+const NLP_SERVICE_URL = `http://${process.env.NLP_SERVICE_HOST || '127.0.0.1'}:${process.env.NLP_SERVICE_PORT || '8000'}`;
 
-// ── Twitter/X API v2 ───────────────────────────────────────────
-async function fetchTwitterPosts(query: string, bearerToken: string): Promise<any[]> {
+// ── Initialize Key Pools ───────────────────────────────────────
+// Pools are module-level singletons shared across all requests.
+export const youtubePool = new KeyPool(loadKeysFromEnv('YOUTUBE_API_KEY'), 86400);   // daily quota
+export const twitterPool = new KeyPool(loadKeysFromEnv('TWITTER_BEARER_TOKEN'), 900); // 15-min window
+export const telegramPool = new KeyPool(loadKeysFromEnv('TELEGRAM_BOT_TOKEN'), 60);   // per-second
+export const metaPool = new KeyPool(loadKeysFromEnv('META_ACCESS_TOKEN'), 3600);      // hourly
+
+console.log(`[KeyPool] YouTube: ${youtubePool.size} key(s), Twitter: ${twitterPool.size} key(s), Telegram: ${telegramPool.size} key(s), Meta: ${metaPool.size} key(s)`);
+
+// ── Twitter/X API v2 (with key rotation) ──────────────────────
+async function fetchTwitterPostsSingle(query: string, bearerToken: string): Promise<{ posts: any[]; status: number; body: string }> {
   try {
     const url = `https://api.twitter.com/2/tweets/search/recent?query=${encodeURIComponent(query)}&max_results=10&tweet.fields=created_at,public_metrics,lang,geo&expansions=author_id&user.fields=username`;
     const resp = await fetch(url, {
       headers: { 'Authorization': `Bearer ${bearerToken}` },
     });
 
+    const body = await resp.text();
+
     if (!resp.ok) {
-      const errBody = await resp.text();
-      
-      if (resp.status === 403) {
-        console.error(`[LIVE] Twitter API 403 Forbidden. This typically means your API key is on the FREE tier which does NOT include search access. Upgrade to Basic ($100/mo) or higher at developer.twitter.com. Raw response: ${errBody}`);
-      } else if (resp.status === 429) {
-        console.error(`[LIVE] Twitter API 429 Rate Limited. You've exceeded your tier's rate limit. Wait and retry. Raw response: ${errBody}`);
-      } else if (resp.status === 402) {
-        console.error(`[LIVE] Twitter API 402 Payment Required. Your API subscription needs payment. Raw response: ${errBody}`);
-      } else {
-        console.error(`[LIVE] Twitter API error ${resp.status}: ${errBody}`);
-      }
-      
-      // HONESTY: Return empty array — NEVER generate fake posts as fallback
-      return [];
+      return { posts: [], status: resp.status, body };
     }
 
-    const data = await resp.json() as any;
-    if (!data.data) return [];
+    const data = JSON.parse(body) as any;
+    if (!data.data) return { posts: [], status: 200, body: '' };
 
     // Build author lookup
     const authors: Record<string, string> = {};
@@ -53,7 +64,7 @@ async function fetchTwitterPosts(query: string, bearerToken: string): Promise<an
       }
     }
 
-    return data.data.map((tweet: any, idx: number) => {
+    const posts = data.data.map((tweet: any) => {
       const username = authors[tweet.author_id] || 'unknown';
       return {
         post_id: `TW-LIVE-${tweet.id}`,
@@ -74,10 +85,38 @@ async function fetchTwitterPosts(query: string, bearerToken: string): Promise<an
         post_url: `https://twitter.com/${username}/status/${tweet.id}`,
       };
     });
+    return { posts, status: 200, body: '' };
   } catch (err: any) {
     console.error('[LIVE] Twitter fetch error:', err.message || err);
-    return []; // Return empty, never fake
+    return { posts: [], status: 0, body: '' };
   }
+}
+
+async function fetchTwitterPosts(query: string): Promise<any[]> {
+  for (let i = 0; i < twitterPool.size; i++) {
+    const key = twitterPool.getActiveKey();
+    if (!key) {
+      console.error('[LIVE] Twitter: all tokens exhausted');
+      return [];
+    }
+    const result = await fetchTwitterPostsSingle(query, key);
+    if (result.status === 0) return [];  // network error, don't rotate
+    if (isTwitterKeyInvalid(result.status, result.body)) {
+      twitterPool.markInvalid(key);
+      continue;
+    }
+    if (isTwitterQuotaExhausted(result.status, result.body)) {
+      twitterPool.markExhausted(key);
+      continue;
+    }
+    if (result.status !== 200 && result.status !== 0) {
+      // Non-quota error (e.g. 403 free tier) — log but don't rotate
+      console.error(`[LIVE] Twitter API error ${result.status}: ${result.body.substring(0, 200)}`);
+      return [];
+    }
+    return result.posts;
+  }
+  return [];
 }
 
 // ── Helper to find city/state coordinates ──────────────────────────────
@@ -176,22 +215,21 @@ function extractCity(query: string) {
   return { city: 'Unknown', lat: 20 + Math.random() * 5, lng: 75 + Math.random() * 5 };
 }
 
-// ── YouTube Data API v3 ────────────────────────────────────────
-async function fetchYouTubePosts(query: string, apiKey: string): Promise<any[]> {
+// ── YouTube Data API v3 (with key rotation) ───────────────────
+async function fetchYouTubePostsSingle(query: string, apiKey: string): Promise<{ posts: any[]; status: number; body: string }> {
   try {
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&order=date&key=${apiKey}`;
     const resp = await fetch(url);
+    const body = await resp.text();
 
     if (!resp.ok) {
-      const err = await resp.text();
-      console.error(`[LIVE] YouTube API error ${resp.status}: ${err}`);
-      return [];
+      return { posts: [], status: resp.status, body };
     }
 
-    const data = await resp.json() as any;
-    if (!data.items) return [];
+    const data = JSON.parse(body) as any;
+    if (!data.items) return { posts: [], status: 200, body: '' };
 
-    return data.items.map((item: any) => {
+    const posts = data.items.map((item: any) => {
       const geo = extractCity(query);
       return {
         post_id: `YT-LIVE-${item.id.videoId}-${Date.now()}`,
@@ -210,10 +248,37 @@ async function fetchYouTubePosts(query: string, apiKey: string): Promise<any[]> 
         is_synthetic: false,
       };
     });
+    return { posts, status: 200, body: '' };
   } catch (err) {
     console.error('[LIVE] YouTube fetch error:', err);
-    return [];
+    return { posts: [], status: 0, body: '' };
   }
+}
+
+async function fetchYouTubePosts(query: string): Promise<any[]> {
+  for (let i = 0; i < youtubePool.size; i++) {
+    const key = youtubePool.getActiveKey();
+    if (!key) {
+      console.error('[LIVE] YouTube: all keys exhausted');
+      return [];
+    }
+    const result = await fetchYouTubePostsSingle(query, key);
+    if (result.status === 0) return [];  // network error, don't rotate
+    if (isYouTubeKeyInvalid(result.status, result.body)) {
+      youtubePool.markInvalid(key);
+      continue;
+    }
+    if (isYouTubeQuotaExhausted(result.status, result.body)) {
+      youtubePool.markExhausted(key);
+      continue;
+    }
+    if (result.status !== 200 && result.status !== 0) {
+      console.error(`[LIVE] YouTube API error ${result.status}: ${result.body.substring(0, 200)}`);
+      return [];
+    }
+    return result.posts;
+  }
+  return [];
 }
 
 
@@ -669,26 +734,66 @@ router.get('/status', async (_req: Request, res: Response) => {
 
   res.json({
     twitter: { 
-      configured: !!twitterToken, 
+      configured: twitterPool.size > 0, 
       label: 'Twitter/X API v2',
-      warning: twitterToken ? 'Free tier may not support search — check developer.twitter.com for your tier' : 'No TWITTER_BEARER_TOKEN set',
+      keys_active: twitterPool.activeCount,
+      keys_total: twitterPool.size,
+      warning: twitterPool.size > 0 ? 'Free tier may not support search — check developer.twitter.com for your tier' : 'No TWITTER_BEARER_TOKEN set',
     },
-    youtube: { configured: !!youtubeKey, label: 'YouTube Data API v3' },
+    youtube: {
+      configured: youtubePool.size > 0,
+      label: 'YouTube Data API v3',
+      keys_active: youtubePool.activeCount,
+      keys_total: youtubePool.size,
+    },
     meta: { 
-      configured: !!metaToken, 
-      label: metaToken ? 'Meta Graph API' : 'Meta (Scraper Fallback)',
-      fallback: !metaToken ? 'scraper' : 'api',
-      warning: !metaToken ? 'Graph API token not set — using public page scraper as fallback' : undefined,
+      configured: metaPool.size > 0, 
+      label: metaPool.size > 0 ? 'Meta Graph API' : 'Meta (Scraper Fallback)',
+      keys_active: metaPool.activeCount,
+      keys_total: metaPool.size,
+      fallback: metaPool.size === 0 ? 'scraper' : 'api',
+      warning: metaPool.size === 0 ? 'Graph API token not set — using public page scraper as fallback' : undefined,
     },
     telegram: {
       configured: true,
-      label: telegramToken ? 'Telegram (Public Directory + Bot API)' : 'Telegram (Public Channels Directory)',
+      label: telegramPool.size > 0 ? 'Telegram (Public Directory + Bot API)' : 'Telegram (Public Channels Directory)',
+      keys_active: telegramPool.activeCount,
+      keys_total: telegramPool.size,
       botUsername: telegramBotInfo,
-      note: telegramBotInfo ? `Connected as ${telegramBotInfo}` : (telegramToken ? 'Bot Token Configured' : 'Using 50+ public news & alert channels'),
-      warning: !telegramToken ? 'No TELEGRAM_BOT_TOKEN set — using public channels only. Add token from @BotFather for private/admin channels' : undefined,
+      note: telegramBotInfo ? `Connected as ${telegramBotInfo}` : (telegramPool.size > 0 ? 'Bot Token Configured' : 'Using 50+ public news & alert channels'),
+      warning: telegramPool.size === 0 ? 'No TELEGRAM_BOT_TOKEN set — using public channels only. Add token from @BotFather for private/admin channels' : undefined,
     },
 
     nlp_service: NLP_SERVICE_URL,
+  });
+});
+
+/**
+ * GET /api/live/key-status
+ * Per-platform key pool status for dashboard visibility.
+ */
+router.get('/key-status', (_req: Request, res: Response) => {
+  res.json({
+    youtube: {
+      active: youtubePool.activeCount,
+      total: youtubePool.size,
+      keys: youtubePool.statusReport(),
+    },
+    twitter: {
+      active: twitterPool.activeCount,
+      total: twitterPool.size,
+      keys: twitterPool.statusReport(),
+    },
+    telegram: {
+      active: telegramPool.activeCount,
+      total: telegramPool.size,
+      keys: telegramPool.statusReport(),
+    },
+    meta: {
+      active: metaPool.activeCount,
+      total: metaPool.size,
+      keys: metaPool.statusReport(),
+    },
   });
 });
 
@@ -711,31 +816,29 @@ router.post('/fetch', async (req: Request, res: Response) => {
   const rawPosts: any[] = [];
   const errors: string[] = [];
 
-  // Fetch from Twitter
-  const twitterToken = process.env.TWITTER_BEARER_TOKEN;
-  if (targetPlatforms.includes('twitter') && twitterToken) {
+  // Fetch from Twitter (uses pool internally — no need to pass token)
+  if (targetPlatforms.includes('twitter') && twitterPool.size > 0) {
     try {
-      const tweets = await fetchTwitterPosts(query, twitterToken);
+      const tweets = await fetchTwitterPosts(query);
       rawPosts.push(...tweets);
       console.log(`[LIVE] Twitter: ${tweets.length} posts fetched`);
     } catch (err: any) {
       errors.push(`Twitter: ${err.message || 'Fetch Error'}`);
     }
-  } else if (targetPlatforms.includes('twitter') && !twitterToken) {
+  } else if (targetPlatforms.includes('twitter') && twitterPool.size === 0) {
     errors.push('Twitter: No TWITTER_BEARER_TOKEN configured');
   }
 
-  // Fetch from YouTube
-  const youtubeKey = process.env.YOUTUBE_API_KEY;
-  if (targetPlatforms.includes('youtube') && youtubeKey) {
+  // Fetch from YouTube (uses pool internally)
+  if (targetPlatforms.includes('youtube') && youtubePool.size > 0) {
     try {
-      const ytPosts = await fetchYouTubePosts(query, youtubeKey);
+      const ytPosts = await fetchYouTubePosts(query);
       rawPosts.push(...ytPosts);
       console.log(`[LIVE] YouTube: ${ytPosts.length} posts fetched`);
     } catch (err: any) {
       errors.push(`YouTube: ${err.message || 'Fetch Error'}`);
     }
-  } else if (targetPlatforms.includes('youtube') && !youtubeKey) {
+  } else if (targetPlatforms.includes('youtube') && youtubePool.size === 0) {
     errors.push('YouTube: No YOUTUBE_API_KEY configured');
   }
 
@@ -782,7 +885,7 @@ router.post('/fetch', async (req: Request, res: Response) => {
       // 2. Generate and Add Alerts
       const newAlerts: any[] = [];
       // Fetch live watchlist from upstream API for matching
-      const WATCHLIST_API_BASE = `http://${process.env.WATCHLIST_API_HOST || 'localhost'}:${process.env.WATCHLIST_API_PORT || '8002'}`;
+      const WATCHLIST_API_BASE = `http://${process.env.WATCHLIST_API_HOST || '127.0.0.1'}:${process.env.WATCHLIST_API_PORT || '8002'}`;
       let watchlistData: { keywords: any[]; hashtags: any[]; profiles: any[] } = { keywords: [], hashtags: [], profiles: [] };
       try {
         const wlRes = await fetch(`${WATCHLIST_API_BASE}/watchlist`);
