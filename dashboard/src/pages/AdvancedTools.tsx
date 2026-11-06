@@ -361,9 +361,30 @@ export default function AdvancedTools() {
           {spreadData && (
             <div style={{ padding: '16px', background: isDark ? 'rgba(0,0,0,0.2)' : '#f3f4f6', borderRadius: '8px', marginTop: '16px' }}>
               <h4 style={{ fontSize: '14px', fontWeight: 600, color: textPrimary, marginBottom: '12px' }}>Spread Analysis Result</h4>
-              <pre style={{ fontSize: '12px', color: textSecondary, overflowX: 'auto', margin: 0 }}>
-                {JSON.stringify(spreadData, null, 2)}
-              </pre>
+              
+              {/* Summary Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ padding: '10px', borderRadius: '8px', background: isDark ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.05)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#8b5cf6' }}>{spreadData.nodes?.length || spreadData.graph?.nodes?.length || '—'}</div>
+                  <div style={{ fontSize: '11px', color: textSecondary }}>Nodes</div>
+                </div>
+                <div style={{ padding: '10px', borderRadius: '8px', background: isDark ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.05)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#6366f1' }}>{spreadData.edges?.length || spreadData.graph?.edges?.length || '—'}</div>
+                  <div style={{ fontSize: '11px', color: textSecondary }}>Edges</div>
+                </div>
+                <div style={{ padding: '10px', borderRadius: '8px', background: isDark ? 'rgba(236,72,153,0.1)' : 'rgba(236,72,153,0.05)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>{spreadData.amplification_score?.toFixed(1) || spreadData.spread_depth || '—'}</div>
+                  <div style={{ fontSize: '11px', color: textSecondary }}>Spread Score</div>
+                </div>
+              </div>
+
+              {/* Raw Data */}
+              <details style={{ cursor: 'pointer' }}>
+                <summary style={{ fontSize: '12px', color: textSecondary, marginBottom: '8px' }}>View Raw Data</summary>
+                <pre style={{ fontSize: '11px', color: textSecondary, overflowX: 'auto', margin: 0, opacity: 0.7, maxHeight: '200px', overflow: 'auto' }}>
+                  {JSON.stringify(spreadData, null, 2)}
+                </pre>
+              </details>
             </div>
           )}
         </div>
@@ -412,25 +433,62 @@ export default function AdvancedTools() {
           {deepfakeData && (
             <div style={{ padding: '16px', background: isDark ? 'rgba(0,0,0,0.2)' : '#f3f4f6', borderRadius: '8px', marginTop: '16px' }}>
               <h4 style={{ fontSize: '14px', fontWeight: 600, color: textPrimary, marginBottom: '12px' }}>Detection Result</h4>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '12px' }}>
-                {deepfakeData.confidence === null ? (
-                  <span style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(239,165,68,0.15)', color: '#f59e0b', fontWeight: 600, fontSize: '13px' }}>
-                    Model Offline (Fallback Mode)
-                  </span>
-                ) : (
-                  <>
-                    <span style={{ padding: '6px 12px', borderRadius: '6px', background: deepfakeData.is_ai_generated ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', color: deepfakeData.is_ai_generated ? '#ef4444' : '#10b981', fontWeight: 600, fontSize: '13px' }}>
-                      {deepfakeData.is_ai_generated ? 'AI Generated' : 'Authentic'}
+              
+              {/* Image Preview */}
+              {imageUrl && (
+                <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', maxHeight: '180px' }}>
+                  <img src={imageUrl} alt="Analyzed" style={{ width: '100%', objectFit: 'cover', maxHeight: '180px' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                </div>
+              )}
+              
+              {deepfakeData.confidence === null ? (
+                <span style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(239,165,68,0.15)', color: '#f59e0b', fontWeight: 600, fontSize: '13px' }}>
+                  Model Offline (Fallback Mode)
+                </span>
+              ) : (
+                <>
+                  {/* Verdict */}
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px' }}>
+                    <span style={{ 
+                      padding: '8px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '14px',
+                      background: deepfakeData.is_ai_generated ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', 
+                      color: deepfakeData.is_ai_generated ? '#ef4444' : '#10b981',
+                    }}>
+                      {deepfakeData.is_ai_generated ? '⚠️ AI Generated' : '✅ Authentic'}
                     </span>
-                    <span style={{ fontSize: '13px', color: textSecondary }}>
-                      Confidence: {(deepfakeData.confidence * 100).toFixed(1)}%
-                    </span>
-                  </>
-                )}
-              </div>
-              <pre style={{ fontSize: '12px', color: textSecondary, overflowX: 'auto', margin: 0, opacity: 0.7 }}>
-                {JSON.stringify(deepfakeData, null, 2)}
-              </pre>
+                  </div>
+                  
+                  {/* Confidence Bar */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                      <span style={{ color: textSecondary }}>Confidence Level</span>
+                      <span style={{ fontWeight: 700, color: deepfakeData.confidence > 0.85 ? '#ef4444' : '#f59e0b' }}>
+                        {(deepfakeData.confidence * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div style={{ height: '8px', borderRadius: '4px', background: isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb', overflow: 'hidden' }}>
+                      <div style={{ 
+                        width: `${deepfakeData.confidence * 100}%`, height: '100%', borderRadius: '4px',
+                        background: deepfakeData.is_ai_generated 
+                          ? 'linear-gradient(90deg, #f59e0b, #ef4444)' 
+                          : 'linear-gradient(90deg, #22c55e, #10b981)',
+                        transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                  </div>
+                  
+                  {/* Details */}
+                  <div style={{ fontSize: '12px', color: textSecondary, lineHeight: 1.8 }}>
+                    <div><strong>Model:</strong> {deepfakeData.model_name}</div>
+                    <div><strong>Analysis:</strong> {deepfakeData.explanation}</div>
+                    {!deepfakeData.model_loaded && (
+                      <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(245,158,11,0.08)', borderRadius: '6px', color: '#f59e0b', fontSize: '11px' }}>
+                        ℹ️ Using simulated detection (model not loaded in offline mode). In production, the full HuggingFace pipeline provides real detection.
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

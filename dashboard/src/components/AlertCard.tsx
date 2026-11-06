@@ -62,12 +62,40 @@ export default function AlertCard({ alert, role, onAcknowledge, onUnacknowledge 
       </div>
       
       {/* Post ID display */}
-      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>POST ID:</span>
         <span style={{ fontSize: '12px', fontFamily: 'monospace', background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: '4px', color: 'var(--accent-blue)', userSelect: 'all' }}>{alert.post_id}</span>
+        {alert.threat_category && alert.threat_category !== alert.type && (
+          <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600,
+            background: alert.threat_category === 'IncitementToViolence' ? 'rgba(239,68,68,0.15)' :
+              alert.threat_category === 'Inflammatory' ? 'rgba(249,115,22,0.15)' :
+              alert.threat_category === 'FakeNews' ? 'rgba(168,85,247,0.15)' : 'rgba(34,197,94,0.15)',
+            color: alert.threat_category === 'IncitementToViolence' ? '#ef4444' :
+              alert.threat_category === 'Inflammatory' ? '#f97316' :
+              alert.threat_category === 'FakeNews' ? '#a855f7' : '#22c55e'
+          }}>{alert.threat_category}</span>
+        )}
+        {alert.confidence && (
+          <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: 'rgba(0,212,255,0.1)', color: 'var(--accent-blue)' }}>
+            {(alert.confidence * 100).toFixed(0)}% conf
+          </span>
+        )}
       </div>
 
-      <p className="alert-description" style={{ fontSize: '14px', marginBottom: '12px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{alert.description}</p>
+      {/* Post Content Preview */}
+      {alert.post_text && (
+        <div style={{
+          padding: '10px 14px', marginBottom: '12px', borderRadius: '8px',
+          background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)',
+          fontSize: '13px', lineHeight: 1.6, color: 'var(--text-secondary)',
+          maxHeight: '80px', overflow: 'hidden', position: 'relative'
+        }}>
+          <span style={{ fontWeight: 600, fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📝 POST CONTENT: </span>
+          {alert.post_text}
+        </div>
+      )}
+
+      <p className="alert-description" style={{ fontSize: '14px', marginBottom: '12px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{alert.description?.split('\n\nPost Content:')[0]}</p>
 
       {/* AI Summary Section */}
       {summary && (

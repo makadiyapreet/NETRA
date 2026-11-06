@@ -18,6 +18,7 @@ import SystemHealth from './pages/SystemHealth';
 import CrawlScheduler from './pages/CrawlScheduler';
 import AdvancedTools from './pages/AdvancedTools';
 import SplashScreen from './components/SplashScreen';
+import HelpChat from './components/HelpChat';
 
 type Page =
   | 'dashboard'
@@ -210,6 +211,8 @@ export default function App() {
             onClose={() => setShowTour(false)}
           />
         )}
+
+        <HelpChat />
       </div>
     </ThemeProvider>
   );

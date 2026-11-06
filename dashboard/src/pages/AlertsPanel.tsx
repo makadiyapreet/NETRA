@@ -156,7 +156,11 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
   const filteredAlerts = alerts
     .filter((a) => (activeTab === 'unack' ? !a.acknowledged : a.acknowledged))
     .filter((a) => !filters.severity || a.severity >= parseInt(filters.severity))
-    .filter((a) => !filters.category || a.type === filters.category)
+    .filter((a) => {
+      if (!filters.category) return true;
+      // Match on type (WatchlistMatch, IncitementToViolence, etc.) OR threat_category
+      return a.type === filters.category || a.threat_category === filters.category;
+    })
     .filter((a) => !filters.platform || (a.platform && a.platform.toLowerCase() === filters.platform.toLowerCase()))
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
@@ -204,9 +208,10 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
 
         <select className="filter-select" style={{ minWidth: 140 }} value={filters.severity} onChange={e => setFilters(f => ({ ...f, severity: e.target.value }))}>
           <option value="">All Severities</option>
-          <option value="5">Severity 5</option>
-          <option value="4">Severity 4+</option>
-          <option value="3">Severity 3+</option>
+          <option value="5">SEV 5 (Critical)</option>
+          <option value="4">SEV 4+ (High)</option>
+          <option value="3">SEV 3+ (Medium)</option>
+          <option value="2">SEV 2+ (Low)</option>
         </select>
 
         <select className="filter-select" style={{ minWidth: 140 }} value={filters.category} onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}>
@@ -214,6 +219,7 @@ export default function AlertsPanel({ role }: AlertsPanelProps) {
           <option value="IncitementToViolence">Incitement To Violence</option>
           <option value="Inflammatory">Inflammatory</option>
           <option value="FakeNews">Fake News</option>
+          <option value="WatchlistMatch">Watchlist Match</option>
         </select>
 
         <select className="filter-select" style={{ minWidth: 140 }} value={filters.platform} onChange={e => setFilters(f => ({ ...f, platform: e.target.value }))}>

@@ -490,16 +490,20 @@ async def health():
 @app.post("/classify", response_model=ClassificationOutput)
 async def classify(post: PostInput):
     """Classify a single post."""
-    cls_output, _ = classify_post(post)
+    import asyncio
+    # Run blocking Groq/Sarvam HTTP calls in thread pool to avoid blocking the event loop
+    # (which would make /health unresponsive during classification bursts)
+    cls_output, _ = await asyncio.to_thread(classify_post, post)
     return cls_output
 
 
 @app.post("/classify-batch", response_model=list[ClassificationOutput])
 async def classify_batch(posts: list[PostInput]):
     """Classify multiple posts."""
+    import asyncio
     results = []
     for post in posts:
-        cls_output, _ = classify_post(post)
+        cls_output, _ = await asyncio.to_thread(classify_post, post)
         results.append(cls_output)
     return results
 

@@ -106,7 +106,43 @@ export default function TrendView() {
         </div>
       </div>
 
-      {/* Spike summary cards */}
+      {/* Explanation */}
+      <div className="glass-card" style={{ padding: '14px 20px', marginBottom: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+        <strong style={{ color: 'var(--text-primary)' }}>How it works:</strong> NETRA monitors keyword frequency across all ingested posts. When a keyword's usage suddenly spikes beyond its normal variance (measured by <strong>Z-Score</strong>), it's flagged here. 
+        Z-Score ≥ 6 = Critical, ≥ 4 = High, ≥ 3 = Medium. Higher Z-scores mean more abnormal spikes. Click any keyword card to view its detailed timeline.
+      </div>
+
+      {/* Overall Stats */}
+      <div className="stats-row" style={{ marginBottom: 20 }}>
+        <div className="glass-card stat-card">
+          <div className="stat-card-label">Active Spikes</div>
+          <div className="stat-card-value" style={{ color: '#00d4ff' }}>{filteredTrends.length}</div>
+          <div className="stat-card-sub">keywords being tracked</div>
+        </div>
+        <div className="glass-card stat-card">
+          <div className="stat-card-label">Total Mentions</div>
+          <div className="stat-card-value" style={{ color: '#a855f7' }}>
+            {filteredTrends.reduce((s, t) => s + t.frequency_timeseries.reduce((a, p) => a + p.count, 0), 0).toLocaleString()}
+          </div>
+          <div className="stat-card-sub">across all keywords</div>
+        </div>
+        <div className="glass-card stat-card">
+          <div className="stat-card-label">Avg Z-Score</div>
+          <div className="stat-card-value" style={{ color: '#f59e0b' }}>
+            {filteredTrends.length > 0 ? (filteredTrends.reduce((s, t) => s + t.z_score, 0) / filteredTrends.length).toFixed(1) : '0'}
+          </div>
+          <div className="stat-card-sub">spike intensity</div>
+        </div>
+        <div className="glass-card stat-card">
+          <div className="stat-card-label">Highest Peak</div>
+          <div className="stat-card-value" style={{ color: '#ef4444' }}>
+            {filteredTrends.length > 0 ? Math.max(...filteredTrends.map(t => Math.max(...t.frequency_timeseries.map(p => p.count)))).toLocaleString() : '0'}
+          </div>
+          <div className="stat-card-sub">single-hour mentions</div>
+        </div>
+      </div>
+
+      {/* Spike keyword cards */}
       <div className="stats-row" style={{ marginBottom: 24 }}>
         {filteredTrends.map((t, i) => {
           const sev = getSeverityLabel(t.z_score);

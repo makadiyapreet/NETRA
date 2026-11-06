@@ -385,22 +385,46 @@ async function classifyPost(post: any): Promise<any> {
       };
     }
   } catch {
-    // NLP service unavailable — use basic heuristic classification
+    // NLP service unavailable — use comprehensive heuristic classification
   }
 
-  // Fallback: basic keyword-based classification
+  // Fallback: comprehensive multilingual keyword-based classification
   const text = post.text.toLowerCase();
-  const dangerWords = ['kill', 'attack', 'destroy', 'riot', 'violence', 'hate', 'bomb', 'threat', 'हिंसा', 'मारो', 'हथियार', 'दंगा'];
-  const fakeWords = ['fake', 'hoax', 'false', 'misleading', 'conspiracy', 'breaking', 'secret'];
+  
+  const violenceWords = [
+    'kill', 'murder', 'attack', 'destroy', 'riot', 'bomb', 'weapon', 'shoot', 'stab',
+    'burn', 'lynch', 'violence', 'terrorist', 'terrorism', 'assault', 'bloodshed', 'arson',
+    'हिंसा', 'मारो', 'हथियार', 'दंगा', 'बम', 'गोली', 'हमला', 'जलाओ', 'काटो', 'आतंक',
+    'મારો', 'હિંસા', 'દંગા', 'હથિયાર', 'હુમલો', 'બાળો', 'કાપો',
+    'maaro', 'danga', 'hamla', 'maar do', 'bomb blast',
+  ];
+  const inflammatoryWords = [
+    'hate', 'hatred', 'disgusting', 'scum', 'traitor', 'anti-national', 'enemy',
+    'communal', 'extremist', 'boycott', 'shame', 'disgrace', 'bigot', 'filth',
+    'नफरत', 'गद्दार', 'देशद्रोही', 'भगाओ', 'शर्म', 'बहिष्कार', 'भड़काऊ', 'कट्टर',
+    'નફરત', 'ગદ્દાર', 'ભગાડો', 'શરમ', 'બહિષ્કાર', 'ભડકાઉ', 'કટ્ટર',
+    'nafrat', 'gaddar', 'bhagao', 'boycott karo', 'anti national',
+  ];
+  const fakeWords = [
+    'fake', 'hoax', 'false', 'misleading', 'conspiracy', 'rumor', 'propaganda',
+    'unverified', 'debunked', 'fabricated', 'deepfake', 'secret exposed', 'cover up',
+    'अफवाह', 'झूठ', 'फर्जी', 'फेक', 'षड्यंत्र', 'साजिश',
+    'અફવા', 'જૂઠ', 'ફર્જી', 'ફેક', 'ષડયંત્ર',
+    'farzi', 'jhooth', 'fake news',
+  ];
+  
+  const vScore = violenceWords.filter(w => text.includes(w)).length;
+  const iScore = inflammatoryWords.filter(w => text.includes(w)).length;
+  const fScore = fakeWords.filter(w => text.includes(w)).length;
+  const maxScore = Math.max(vScore, iScore, fScore);
+  
   let category = 'Neutral';
-  let confidence = 0.5;
-
-  if (dangerWords.some(w => text.includes(w))) {
-    category = 'IncitementToViolence';
-    confidence = 0.75;
-  } else if (fakeWords.some(w => text.includes(w))) {
-    category = 'FakeNews';
-    confidence = 0.72;
+  let confidence = 0.65;
+  
+  if (maxScore > 0) {
+    if (vScore === maxScore) { category = 'IncitementToViolence'; confidence = Math.min(0.95, 0.70 + vScore * 0.05); }
+    else if (iScore === maxScore) { category = 'Inflammatory'; confidence = Math.min(0.92, 0.68 + iScore * 0.05); }
+    else { category = 'FakeNews'; confidence = Math.min(0.90, 0.65 + fScore * 0.05); }
   }
 
   return {
@@ -410,6 +434,7 @@ async function classifyPost(post: any): Promise<any> {
       sentiment: category === 'Neutral' ? 'neutral' : 'negative',
       confidence,
       keywords: [],
+      model_version: 'gateway-heuristic-v2',
     },
   };
 }
@@ -866,8 +891,17 @@ router.post('/fetch', async (req: Request, res: Response) => {
   }
 
 
-  // Classify all posts
-  const classifiedPosts = await Promise.all(rawPosts.map(classifyPost));
+  // Classify posts sequentially with small delay to prevent Groq rate limiting
+  // (Promise.all sends all at once → 429 rate limit → ClassificationFailed)
+  const classifiedPosts: any[] = [];
+  for (const post of rawPosts) {
+    const classified = await classifyPost(post);
+    classifiedPosts.push(classified);
+    // Small delay between classifications to respect Groq free-tier rate limits
+    if (rawPosts.length > 3) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
 
   // We rely on `extractCity` to provide the real or fuzzy state-level coordinates.
   // We no longer forcefully rewrite Unknown cities to Gujarat cities.
@@ -929,25 +963,30 @@ router.post('/fetch', async (req: Request, res: Response) => {
           }
         }
 
-        if (matchedWatchlist || (p.classification.threat_category !== 'Neutral' && p.classification.confidence > 0.6)) {
-          const isThreat = p.classification.threat_category !== 'Neutral' && p.classification.confidence > 0.6;
+        if (matchedWatchlist || (p.classification.threat_category !== 'Neutral' && p.classification.threat_category !== 'ClassificationFailed' && p.classification.confidence > 0.6)) {
+          const isThreat = p.classification.threat_category !== 'Neutral' && p.classification.threat_category !== 'ClassificationFailed' && p.classification.confidence > 0.6;
           const severity = matchedWatchlist ? 5 : (p.classification.confidence > 0.85 ? 5 : (p.classification.threat_category === 'IncitementToViolence' ? 4 : 3));
           const alertType = matchedWatchlist ? 'WatchlistMatch' : p.classification.threat_category;
           const title = matchedWatchlist ? `Watchlist Target Detected` : `Live ${p.classification.threat_category} Detected`;
+          const postText = (p.text || '').slice(0, 300);
           const desc = matchedWatchlist 
-            ? `A post by ${p.author_handle} matched an active watchlist item. ${matchReason}.`
-            : `A post by ${p.author_handle} was classified as ${p.classification.threat_category} with ${(p.classification.confidence * 100).toFixed(1)}% confidence.`;
+            ? `A post by ${p.author_handle} matched an active watchlist item. ${matchReason}.\n\nPost Content: "${postText}"`
+            : `A post by ${p.author_handle} was classified as ${p.classification.threat_category} with ${(p.classification.confidence * 100).toFixed(1)}% confidence.\n\nPost Content: "${postText}"`;
 
           newAlerts.push({
             alert_id: `ALT-LIVE-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
             post_id: p.post_id,
             type: alertType,
+            threat_category: p.classification.threat_category,
             severity,
             title,
             description: desc,
+            post_text: postText,
             related_post_ids: [p.post_id],
             post_url: p.post_url,
             platform: p.platform,
+            author_handle: p.author_handle,
+            confidence: p.classification.confidence,
             timestamp: new Date().toISOString(),
             acknowledged: false
           });

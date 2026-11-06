@@ -232,7 +232,14 @@ export default function GeoMapView() {
         try {
           const res = await fetch(`/api/posts?${params.toString()}`);
           const data = await res.json();
-          setLevel4Posts(data.data || []);
+          const newPosts = data.data || [];
+          // Only update if posts actually changed — prevents marker blinking
+          setLevel4Posts(prev => {
+            const prevIds = new Set(prev.map((p: any) => p.post_id));
+            const newIds = new Set(newPosts.map((p: any) => p.post_id));
+            if (prevIds.size === newIds.size && [...prevIds].every(id => newIds.has(id))) return prev;
+            return newPosts;
+          });
         } catch (e) {
           console.error(e);
         } finally {
@@ -367,15 +374,16 @@ export default function GeoMapView() {
     return false; // In city drillLevel, we show individual posts instead of nodes
   });
 
-  const [tileType, setTileType] = useState<'dark' | 'light' | 'satellite' | 'terrain' | 'street' | 'watercolor'>('dark');
+  const [tileType, setTileType] = useState<'dark' | 'light' | 'satellite' | 'terrain' | 'street' | 'voyager'>('dark');
   
+  // NOTE: CartoCDN tiles now require an API key (August 2026). Using free alternatives.
   const TILE_OPTIONS = {
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    dark: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+    light: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
     street: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    watercolor: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+    voyager: 'https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png',
   };
   
   const currentTileUrl = TILE_OPTIONS[tileType];
@@ -448,7 +456,7 @@ export default function GeoMapView() {
           <button className={`map-tile-btn ${tileType === 'satellite' ? 'active' : ''}`} onClick={() => setTileType('satellite')}>Satellite</button>
           <button className={`map-tile-btn ${tileType === 'terrain' ? 'active' : ''}`} onClick={() => setTileType('terrain')}>Terrain</button>
           <button className={`map-tile-btn ${tileType === 'street' ? 'active' : ''}`} onClick={() => setTileType('street')}>Street</button>
-          <button className={`map-tile-btn ${tileType === 'watercolor' ? 'active' : ''}`} onClick={() => setTileType('watercolor')}>Voyager</button>
+          <button className={`map-tile-btn ${tileType === 'voyager' ? 'active' : ''}`} onClick={() => setTileType('voyager')}>Voyager</button>
         </div>
       </div>
 
